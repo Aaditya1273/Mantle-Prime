@@ -1,10 +1,34 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { mantle, mantleTestnet } from 'wagmi/chains'
+import { mantle } from 'wagmi/chains'
+import { defineChain } from 'viem'
+
+// Custom Mantle Sepolia Testnet configuration with correct name
+const mantleSepoliaTestnet = defineChain({
+  id: 5003,
+  name: 'Mantle Sepolia Testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'MNT',
+    symbol: 'MNT',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.sepolia.mantle.xyz'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Mantle Sepolia Explorer',
+      url: 'https://sepolia.mantlescan.xyz',
+    },
+  },
+  testnet: true,
+})
 
 export const config = getDefaultConfig({
   appName: 'Mantle Prime',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'your-project-id',
-  chains: [mantle, mantleTestnet],
+  chains: [mantle, mantleSepoliaTestnet],
   ssr: true,
 })
 

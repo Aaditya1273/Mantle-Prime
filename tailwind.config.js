@@ -17,6 +17,18 @@ module.exports = {
     },
     extend: {
       colors: {
+        // Mantle Prime Institutional Color System
+        'primary-white': '#FFFFFF',
+        'surface-gray': '#F9FAFB',
+        'ink-black': '#0F172A',
+        'accent-teal': '#20E2FF',
+        'border-light': '#E5E7EB',
+        'text-secondary': '#64748B',
+        'success-green': '#10B981',
+        'warning-amber': '#F59E0B',
+        'error-red': '#EF4444',
+        
+        // shadcn/ui compatibility
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -51,6 +63,14 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      fontFamily: {
+        'serif': ['Instrument Serif', 'Georgia', 'serif'],
+        'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
+      fontSize: {
+        'yield': ['2.5rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+        'financial': ['1.875rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -65,10 +85,19 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "subtle-pulse": {
+          "0%, 100%": { opacity: 1 },
+          "50%": { opacity: 0.8 },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "subtle-pulse": "subtle-pulse 3s ease-in-out infinite",
+      },
+      boxShadow: {
+        'institutional': '0 1px 3px rgba(15, 23, 42, 0.1)',
+        'none': 'none',
       },
     },
   },

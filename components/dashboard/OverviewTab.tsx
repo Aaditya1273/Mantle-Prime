@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,265 +12,277 @@ import {
   CreditCard, 
   Building, 
   ArrowUpRight,
-  ArrowDownRight,
   DollarSign,
-  Percent,
   Shield,
-  AlertCircle
-} from 'lucide-react'
+  CheckCircle,
+  PieChart
+} from 'lucid
 
-export default function OverviewTab() {
+
   const { address } = useAccount()
-  const [portfolioData, setPortfolioData] = useState({
+  const [portfolioData] = useState({
     totalValue: 125000,
     mETHDeposited: 50,
     creditUsed: 75000,
     rwaInvestments: 45000,
-    totalYield: 12.5,
-    healthFactor: 1.67,
+    totalAPY: 12.5,
+    healthFactor: 1.6,
     mETHYield: 4.2,
-    rwaYield: 8.3
+    rwaYield: 8.3,
+    monthlyYield: 1250
   })
 
-  // Mock data - replace with real contract calls
   const quickStats = [
     {
-      title: "Total Portfolio Value",
-      value: `$${portfolioData.totalValue.toLocaleString()}`,
+     e",
+      value: `$${portfolioData.totalV,
       change: "+12.5%",
-      changeType: "positive",
       icon: DollarSign,
-      description: "Combined mETH + RWA value"
+      description: "Combined 
     },
     {
-      title: "mETH Deposited", 
-      value: `${portfolioData.mETHDeposited} mETH`,
+      ", 
+     ,
       change: "+2.1%",
-      changeType: "positive", 
       icon: Wallet,
-      description: "Earning staking rewards"
+      description: "Eawards"
     },
     {
       title: "Credit Utilized",
-      value: `$${portfolioData.creditUsed.toLocaleString()}`,
-      change: "75%",
-      changeType: "neutral",
+      ing()}`,
+     
       icon: CreditCard,
-      description: "Of available credit line"
+      description: "USDY credit lines issued"
     },
     {
-      title: "RWA Investments",
-      value: `$${portfolioData.rwaInvestments.toLocaleString()}`,
-      change: "+8.3%",
-      changeType: "positive",
-      icon: Building,
-      description: "Across 5 assets"
-    }
-  ]
-
-  const recentActivity = [
-    {
-      type: "deposit",
-      description: "Deposited 10 mETH to vault",
-      amount: "+10 mETH",
-      time: "2 hours ago",
-      status: "completed"
-    },
-    {
-      type: "credit",
-      description: "Issued USDY credit line",
-      amount: "+$25,000 USDY",
-      time: "3 hours ago", 
-      status: "completed"
-    },
-    {
-      type: "purchase",
-      description: "Purchased Miami Beach Apartment shares",
-      amount: "-$15,000 USDY",
-      time: "5 hours ago",
-      status: "completed"
-    },
-    {
-      type: "yield",
-      description: "Claimed RWA yield distribution",
-      amount: "+$312.50",
-      time: "1 day ago",
-      status: "completed"
+      title: "RWA Invesents",
+      value: `$${portfolioData.rwaInvestments
+      .3%",
+     uilding,
+      description: "Fractional dings"
     }
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Welcome back! 👋
-          </h2>
-          <p className="text-gray-300">
-            Here's your Mantle Prime portfolio overview
+    <div className="space-y-8 p-6 bgn">
+      */}
+   ">
+>
+          <h1 className="t>
+     ew
+          </h1>
+          <p className="text-text-secondary text
+            Institutionaletwork
           </p>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-            <Shield className="w-3 h-3 mr-1" />
-            Healthy Position
+       
+     ">
+          <div classN
+            <CheckCircle className="w-3 h-3" />
+            KYC Verified
+          </div>
+          <Badge classNam-1">
+      
+     
           </Badge>
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickStats.map((stat, index) => (
-          <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-sm card-hover">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
-                {stat.value}
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`text-sm flex items-center ${
-                  stat.changeType === 'positive' ? 'text-green-400' : 
-                  stat.changeType === 'negative' ? 'text-red-400' : 'text-gray-400'
-                }`}>
-                  {stat.changeType === 'positive' && <ArrowUpRight className="w-3 h-3 mr-1" />}
-                  {stat.changeType === 'negative' && <ArrowDownRight className="w-3 h-3 mr-1" />}
-                  {stat.change}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {stat.description}
-              </p>
+      {/* Key Metrics Gri
+      
+     
+          <Card key=
+            <CardContent className="p-6">
+              <div classN
+                <stat.ic
+                <span cladium">
+     }
+   n>
+
+          >
+                <p className="m/p>
+                <p className>
+                <p className="text-text-secondary text-s
+             
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Yield Overview */}
-        <Card className="lg:col-span-2 bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Double Yield Performance
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Your combined mETH staking + RWA yields
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Total APY */}
-            <div className="text-center p-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-white/10">
-              <div className="text-4xl font-bold text-white mb-2">
-                {portfolioData.totalYield}%
+      {/* Doube */}
+      <Card clal">
+        >
+          <CardTitle className="financial-heading texitle>
+          <CardDescription className="text-text-secondary">
+            Earn simultaneous returns from mETH
+          </CardDescription>
+        </CardHeadr>
+        <CardC-8">
+          <d">
+     
+            {/* mETH Staking Y}
+            <div className="text-center">
+              <div className="w-16 h-16 bgo mb-4">
+                <Wallet className="w-8 h-8 text-ink-black" />
               </div>
-              <div className="text-sm text-gray-300 mb-4">Total APY</div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-blue-400 font-semibold">{portfolioData.mETHYield}%</div>
-                  <div className="text-gray-400">mETH Staking</div>
-                </div>
-                <div>
-                  <div className="text-purple-400 font-semibold">{portfolioData.rwaYield}%</div>
-                  <div className="text-gray-400">RWA Yields</div>
-                </div>
+              <h3 className="font-serif text-xl font-semibold text-ink->
+              <div className%</div>
+              <p className
+              <div className="mt-4 p-3 bg-surface-gray rounde-lg">
+                <p classN
+                  ${(port
+                </p>
               </div>
             </div>
 
-            {/* Health Factor */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Health Factor</span>
-                <span className="text-sm font-semibold text-green-400">
-                  {portfolioData.healthFactor}x
+            {/* Plus Symbol */}
+            <div className="flex items-center justify-center">
+              <div className="w-12 h-12 bg-accent-teal rounded-full flex items-cent">
+                <spa
+              </div>
+            </div>
+
+            {/* RWA Yield */}
+            <div cla">
+              <div className="w-16 h-16 bg-surface-gray 
+                <Building classNam/>
+              </div>
+              <h3 classNamh3>
+              <di>
+           </p>
+            ">
+>
+                  ${(portfolioDatar
+                </p>
+        v>
+            </div>
+          </div>
+
+          {/* Combined Result */}
+          <div className="mt-8 p-6 bg-surface-gray roht">
+            <div className="text-cente">
+              <h4 classN
+              <div className="yield-number text-5xl tex}%</div>
+              <p className="text-text-secondary mb-4"
+              <div className="
+                <div>
+                  <span className="text-text-an>
+                  <span classan>
+                </div>
+                <div>
+                  <span className="text-tex
+                  <s/span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Portfolio Health & Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Portfoli
+        <Card clasional">
+>
+            <CardTitle className=ding">
+              <Shield className="w-5 h->
+              Portfolio Health
+            </CardTitle>
+            <CardDescription>Monitor risk metrics and collateral status
+          </CardHeader>
+          <CardContent 
+            <div>
+              <div classb-2">
+                <span className="text-text-secondary font-medium">Health Facto
+                <span className>
+                ctor}x
                 </span>
               </div>
-              <Progress 
-                value={Math.min((portfolioData.healthFactor / 2) * 100, 100)} 
-                className="h-2"
-              />
-              <p className="text-xs text-gray-500">
-                Liquidation risk at 1.2x. Current position is healthy.
+              <divl">
+                <dv 
+ll" 
+                  style={{ width:}
+                />
+              </div>
+              <p className=">
+                Liquidald: 1.2x
               </p>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex space-x-3">
-              <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                Deposit mETH
-              </Button>
-              <Button variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">
-                Issue Credit
-              </Button>
+            <div c">
+              <div classed-lg">
+               >
+
+                  ${(portfolioD)}
+                </p>
+              </div>
+              <div className="p-4 bg-surface-gray rounded-lg">
+                <p className="text-text-secondary text-</p>
+                <p className="font-ser>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        {/* Quick Actions */}
+        <Card className="card-institutional">
           <CardHeader>
-            <CardTitle className="text-white">Recent Activity</CardTitle>
-            <CardDescription className="text-gray-300">
-              Your latest transactions
-            </CardDescription>
+            <CardTitle ctle>
+            <CardDescription>Manage your positionsn>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-white/5 border border-white/10">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.status === 'completed' ? 'bg-green-400' : 'bg-yellow-400'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white truncate">
-                      {activity.description}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {activity.time}
-                    </p>
-                  </div>
-                  <div className={`text-sm font-semibold ${
-                    activity.amount.startsWith('+') ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {activity.amount}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <Button variant="ghost" className="w-full mt-4 text-gray-400 hover:text-white">
-              View All Activity
+          <CardContent className="space-y-4">
+            <Button clas">
+              <Wallet className="w-4 h-4 mr-2" />
+              Deposit More mETH
             </Button>
-          </CardContent>
+            <Button clas>
+              <CreditCard className="w-4 h-4 mr-2" />
+              Issue Additional Credit
+            </Button>
+            <Button className="btn-ou
+              <Building " />
+              Browse Rplace
+            </Button>
+            <Butto
+            2" />
+              View Detailed Portfolio
+            </Button>
+          </CardContet>
         </Card>
       </div>
 
-      {/* Risk Management Alert */}
-      <Card className="bg-yellow-500/10 border-yellow-500/30 backdrop-blur-sm">
-        <CardContent className="flex items-center space-x-3 pt-6">
-          <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm text-yellow-200 font-medium">
-              Portfolio Health Check
-            </p>
-            <p className="text-xs text-yellow-300/80">
-              Your position is healthy with a {portfolioData.healthFactor}x health factor. 
-              Consider rebalancing if it drops below 1.5x.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/20">
-            Learn More
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+*/}
+      <Card className="card-institu>
+        <CardHeader>
+          <CardTitle className="financial-heading">Recent Activityitle>
+          <CardDescription>Latest transactions and yield distributions</Carion>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[
+              { action: "Yield Claimed", amount: "$125
+              { action: "Shares Purchased", amount: "50 shares", asset: "Corporate Bond Porago" },
+              { action: "Credit Issued", amount: "$10,000 s ago" },
+              {  }
+            ].ma=> (
+              <div key={index} className="flex items-center justify-between p-4 bg-surface-gray rounded-lg">
+                <div c
+                  < />
+                  <div>
+             </p>
+          
+   
+ 
   )
-}
+}   </div>rd>
+ Cat>
+      </onten     </CardC </div>
+         
+            ))}  /div>
+       <
+          </div>             
+ </p>.time}">{activityry text-smcondat-text-se"texme= classNa<p              t}</p>
+    .amounty">{activicknk-blaext-id tibolt-sem"fone=amsN<p clas              ">
+    htext-rig"tlassName=      <div c
+          ></div               

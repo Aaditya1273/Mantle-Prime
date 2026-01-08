@@ -89,7 +89,7 @@ export default function InstitutionTab() {
     try {
       // Call smart contract
       writeContract({
-        address: CONTRACTS.RWAMarketplace,
+        address: CONTRACTS.RWAMarketplace as `0x${string}`,
         abi: RWA_MARKETPLACE_ABI,
         functionName: 'createAsset',
         args: [

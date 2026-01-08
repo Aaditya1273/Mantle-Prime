@@ -1,51 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Mantle Prime Institutional Design System */
+    --primary-white: #FFFFFF;
+    --surface-gray: #F9FAFB;
+    --ink-black: #0F172A;
+    --accent-teal: #20E2FF;
+    --border-light: #E5E7EB;
+    --text-secondary: #64748B;
+    --success-green: #10B981;
+    --warning-amber: #F59E0B;
+    --error-red: #EF4444;
+    
+    /* shadcn/ui compatibility */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 215 25% 27%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 27%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --popover-foreground: 215 25% 27%;
+    --primary: 215 25% 27%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 215 25% 27%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 197 100% 56%;
+    --accent-foreground: 215 25% 27%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 197 100% 56%;
+    --radius: 0.5rem;
   }
 }
 
@@ -53,9 +44,305 @@
   * {
     @apply border-border;
   }
+  
   body {
-    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--primary-white);
+    color: var(--ink-black);
+    line-height: 1.6;
+    font-weight: 400;
   }
+}
+
+/* Typography Hierarchy */
+.font-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+.yield-number {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-black);
+}
+
+.financial-heading {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 600;
+  color: var(--ink-black);
+}
+
+/* Institutional UI Components */
+.card-institutional {
+  background: var(--primary-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.card-institutional:hover {
+  transform: translateY(-1px);
+  border-color: #D1D5DB;
+}
+
+.card-surface {
+  background: var(--surface-gray);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: var(--ink-black);
+  color: var(--primary-white);
+  border: 1px solid var(--ink-black);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.btn-primary:hover {
+  background: #1E293B;
+  border-color: #1E293B;
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background: var(--accent-teal);
+  color: var(--ink-black);
+  border: 1px solid var(--accent-teal);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.btn-accent:hover {
+  background: #1DD1EA;
+  border-color: #1DD1EA;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink-black);
+  border: 1px solid var(--border-light);
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  background: var(--surface-gray);
+  border-color: #D1D5DB;
+}
+
+.kyc-badge {
+  background: var(--ink-black);
+  color: var(--primary-white);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-badge-success {
+  background: var(--success-green);
+  color: var(--primary-white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.status-badge-warning {
+  background: var(--warning-amber);
+  color: var(--primary-white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Progress bars with institutional styling */
+.progress-institutional {
+  background: var(--surface-gray);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: var(--ink-black);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-accent {
+  background: var(--accent-teal);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Input styling */
+.input-institutional {
+  background: var(--primary-white);
+  border: 1px solid var(--border-light);
+  color: var(--ink-black);
+  font-weight: 400;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.input-institutional:focus {
+  outline: none;
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 3px rgba(32, 226, 255, 0.1);
+}
+
+.input-institutional::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Chart styling */
+.yield-chart-line {
+  stroke: var(--ink-black);
+  stroke-width: 2px;
+  fill: none;
+}
+
+.yield-chart-fill {
+  fill: rgba(15, 23, 42, 0.05);
+  stroke: none;
+}
+
+.yield-chart-grid {
+  stroke: var(--border-light);
+  stroke-width: 1px;
+}
+
+/* Data visualization */
+.metric-card {
+  background: var(--primary-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  border-color: #D1D5DB;
+  transform: translateY(-1px);
+}
+
+.metric-value {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  line-height: 1.2;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Utility classes */
+.text-yield {
+  color: var(--ink-black);
+}
+
+.text-accent {
+  color: var(--accent-teal);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.bg-surface {
+  background-color: var(--surface-gray);
+}
+
+.bg-white {
+  background-color: var(--primary-white);
+}
+
+.border-institutional {
+  border-color: var(--border-light);
+}
+
+/* Remove all shadows for clean institutional look */
+.shadow-none {
+  box-shadow: none !important;
+}
+
+/* Subtle hover states */
+.hover-lift:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+/* Table styling */
+.table-institutional {
+  background: var(--primary-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.table-institutional th {
+  background: var(--surface-gray);
+  color: var(--ink-black);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.table-institutional td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--ink-black);
+}
+
+/* Navigation */
+.nav-institutional {
+  background: var(--primary-white);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--ink-black);
 }
 
 /* Custom scrollbar */
@@ -64,71 +351,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  background: var(--surface-gray);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
+  background: var(--border-light);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-accent;
-}
-
-/* Gradient backgrounds */
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Glass morphism effect */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Animations */
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-.animate-pulse-slow {
-  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Custom button styles */
-.btn-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  transition: all 0.3s ease;
-}
-
-.btn-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-}
-
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  background: #D1D5DB;
 }
