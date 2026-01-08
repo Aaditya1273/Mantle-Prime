@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { parseUnits, formatUnits } from 'viem'
+import { CONTRACTS, TOKENS, CREDIT_ISSUER_ABI, ERC20_ABI } from '@/lib/wagmi'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +26,7 @@ import { formatNumber, formatCurrency } from '@/lib/utils'
 
 export default function CreditTab() {
   const { address } = useAccount()
+  const { toast } = useToast()
   const [creditAmount, setCreditAmount] = useState('')
   const [repayAmount, setRepayAmount] = useState('')
   const [isIssuing, setIsIssuing] = useState(false)
@@ -64,11 +68,21 @@ export default function CreditTab() {
         }))
         setCreditAmount('')
         setIsIssuing(false)
+        toast({
+          title: "Credit Issued Successfully",
+          description: `Issued ${formatCurrency(amount)} USDY credit line`,
+          variant: "success",
+        })
       }, 2000)
 
     } catch (error) {
       console.error('Credit issuance failed:', error)
       setIsIssuing(false)
+      toast({
+        title: "Credit Issuance Failed",
+        description: "Failed to issue credit line. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -92,11 +106,21 @@ export default function CreditTab() {
         }))
         setRepayAmount('')
         setIsRepaying(false)
+        toast({
+          title: "Credit Repaid Successfully",
+          description: `Repaid ${formatCurrency(amount)} USDY`,
+          variant: "success",
+        })
       }, 2000)
 
     } catch (error) {
       console.error('Credit repayment failed:', error)
       setIsRepaying(false)
+      toast({
+        title: "Repayment Failed",
+        description: "Failed to repay credit. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 

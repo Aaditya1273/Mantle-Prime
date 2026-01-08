@@ -3,20 +3,19 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   experimental: {
-    optimizePackageImports: ['@chakra-ui/react']
+    appDir: true,
   },
   webpack: (config) => {
     config.resolve.fallback = {
       fs: false,
       net: false,
       tls: false,
-    };
-    config.externals.push('pino-pretty', 'lokijs', 'encoding');
-    return config;
+    }
+    return config
   },
   images: {
     domains: ['images.unsplash.com', 'via.placeholder.com'],
   },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

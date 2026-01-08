@@ -21,9 +21,11 @@ import {
 } from 'lucide-react'
 import { CONTRACTS, TOKENS, PRIME_VAULT_ABI, ERC20_ABI } from '@/lib/wagmi'
 import { formatNumber, formatCurrency } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function VaultTab() {
   const { address } = useAccount()
+  const { toast } = useToast()
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [isDepositing, setIsDepositing] = useState(false)
@@ -94,11 +96,21 @@ export default function VaultTab() {
         }))
         setDepositAmount('')
         setIsDepositing(false)
+        toast({
+          title: "Deposit Successful",
+          description: `Successfully deposited ${depositAmount} mETH to vault`,
+          variant: "success",
+        })
       }, 2000)
 
     } catch (error) {
       console.error('Deposit failed:', error)
       setIsDepositing(false)
+      toast({
+        title: "Deposit Failed",
+        description: "Failed to deposit mETH. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -126,11 +138,21 @@ export default function VaultTab() {
         }))
         setWithdrawAmount('')
         setIsWithdrawing(false)
+        toast({
+          title: "Withdrawal Successful",
+          description: `Successfully withdrew ${withdrawAmount} mETH from vault`,
+          variant: "success",
+        })
       }, 2000)
 
     } catch (error) {
       console.error('Withdraw failed:', error)
       setIsWithdrawing(false)
+      toast({
+        title: "Withdrawal Failed",
+        description: "Failed to withdraw mETH. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 

@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
+import { parseUnits, formatUnits } from 'viem'
+import { CONTRACTS, TOKENS, RWA_MARKETPLACE_ABI, ERC20_ABI } from '@/lib/wagmi'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +45,7 @@ interface RWAAsset {
 
 export default function MarketplaceTab() {
   const { address } = useAccount()
+  const { toast } = useToast()
   const [selectedAsset, setSelectedAsset] = useState<RWAAsset | null>(null)
   const [purchaseAmount, setPurchaseAmount] = useState('')
   const [isPurchasing, setIsPurchasing] = useState(false)
@@ -181,13 +185,21 @@ export default function MarketplaceTab() {
         setSelectedAsset(null)
         setPurchaseAmount('')
         
-        // Show success message
-        alert(`Successfully purchased ${shares} shares of ${asset.name}!`)
+        toast({
+          title: "Purchase Successful",
+          description: `Successfully purchased ${shares} shares of ${asset.name}`,
+          variant: "success",
+        })
       }, 2000)
 
     } catch (error) {
       console.error('Purchase failed:', error)
       setIsPurchasing(false)
+      toast({
+        title: "Purchase Failed",
+        description: "Failed to purchase shares. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
