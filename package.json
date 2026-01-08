@@ -1,0 +1,32 @@
+{
+  "name": "mantle-prime",
+  "version": "1.0.0",
+  "description": "Institutional-Grade RWA Credit Marketplace on Mantle Network - PRODUCTION READY",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:coverage": "npx hardhat coverage",
+    "deploy:testnet": "npx hardhat run scripts/deploy.js --network mantleTestnet",
+    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mantleMainnet",
+    "seed": "npx hardhat run scripts/seedRwa.js --network mantleTestnet",
+    "verify:testnet": "npx hardhat verify --network mantleTestnet",
+    "verify:mainnet": "npx hardhat verify --network mantleMainnet",
+    "start": "npm run compile && npm run deploy:testnet && npm run seed"
+  },
+  "keywords": ["RWA", "DeFi", "Mantle", "Credit", "mETH", "Yield", "Production"],
+  "author": "Mantle Prime Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@openzeppelin/contracts": "^4.9.5",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1",
+    "chai": "^4.3.10",
+    "ethers": "^6.8.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^4.9.5"
+  }
+}
