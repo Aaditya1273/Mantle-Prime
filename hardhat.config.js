@@ -1,6 +1,12 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-verify");
-require("dotenv").config();
+require("@nomicfoundation/hardhat-ethers");
+const dotenv = require("dotenv");
+
+// Load environment variables
+dotenv.config({ path: ".env.local" });
+dotenv.config(); // fallback
+
+// Use a dummy private key if real one is missing to allow compilation
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -18,35 +24,24 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     },
-    mantleTestnet: {
-      url: "https://rpc.sepolia.mantle.xyz",
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      chainId: 31337,
+    },
+    "mantle-testnet": {
+      url: "https://rpc.sepolia.mantle.xyz", // Mantle Sepolia RPC
+      accounts: [PRIVATE_KEY],
       chainId: 5003,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 20000000000, // 20 gwei
       timeout: 60000,
+      gasPrice: 1000000000, // 1 gwei (reduced from 20 gwei)
     },
-    mantleMainnet: {
-      url: "https://rpc.mantle.xyz", 
+    "mantle-mainnet": {
+      url: "https://rpc.mantle.xyz",
+      accounts: [PRIVATE_KEY], 
       chainId: 5000,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 20000000000, // 20 gwei
       timeout: 60000,
+      gasPrice: 20000000000, // 20 gwei
     },
-  },
-  etherscan: {
-    apiKey: {
-      mantle: "abc", // Placeholder for Mantle explorer verification
-    },
-    customChains: [
-      {
-        network: "mantle",
-        chainId: 5000,
-        urls: {
-          apiURL: "https://explorer.mantle.xyz/api",
-          browserURL: "https://explorer.mantle.xyz"
-        }
-      }
-    ]
   },
   paths: {
     sources: "./contracts",

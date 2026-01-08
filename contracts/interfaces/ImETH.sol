@@ -18,8 +18,8 @@ interface ImETH is IERC20 {
     
     /**
      * @notice Get ETH equivalent for mETH amount
-     * @param mETHAmount Amount of mETH
-     * @return ETH equivalent amount
+     * @param ethAmount Amount of ETH
+     * @return mETH equivalent amount
      */
     function ethToMETH(uint256 ethAmount) external view returns (uint256);
     

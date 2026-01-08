@@ -150,7 +150,10 @@ contract ComplianceModule is Ownable, Pausable {
     /**
      * @notice Get user KYC info
      * @param user User address
-     * @return whitelisted, tier, timestamp, expiresAt
+     * @return whitelisted Whether user is whitelisted
+     * @return tier KYC tier level
+     * @return timestamp When KYC was completed
+     * @return expiresAt When KYC expires
      */
     function getUserKYCInfo(address user) external view returns (
         bool whitelisted,

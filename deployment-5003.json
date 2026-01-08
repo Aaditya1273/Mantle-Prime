@@ -1,0 +1,17 @@
+{
+  "network": "mantle-testnet",
+  "chainId": "5003",
+  "deployer": "0x8bB9b052ad7ec275b46bfcDe425309557EFFAb07",
+  "timestamp": "2026-01-08T05:03:38.040Z",
+  "contracts": {
+    "ComplianceModule": "0xa31749b81470eD13C5efeAa290Cf1caB67Aeb425",
+    "PrimeVault": "0xEa53E2fF08CD18fD31B188a72079aE9Ca34856e4",
+    "CreditIssuer": "0x464D37393C8D3991b493DBb57F5f3b8c31c7Fa60",
+    "RWAMarketplace": "0xcf4F105FeAc23F00489a7De060D34959f8796dd0"
+  },
+  "tokens": {
+    "mETH": "0xd5f7838f5c461feff7fe49ea5ebaf7728bb0adfa",
+    "USDY": "0x5be26527e817998a7206475496fde1e68957c5a6",
+    "USDT0": "0x0000000000000000000000000000000000000000"
+  }
+}
