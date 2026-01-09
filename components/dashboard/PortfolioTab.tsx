@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useStaking, useCreditToken, useRWAMarketplace } from '@/hooks/useContractsUnified'
 import { formatNumber, formatCurrency } from '@/lib/utils'
+import { showTransactionSuccess, showTransactionError } from '@/lib/transaction-utils'
 
 interface RWAHolding {
   id: number
@@ -118,10 +119,21 @@ export default function PortfolioTab() {
 
   const handleClaimYield = async (assetId: number) => {
     try {
-      await claimAssetYield(assetId)
-      // In a real implementation, this would update the UI after successful claim
+      const txHash = await claimAssetYield(assetId)
+      const asset = rwaHoldings.find(h => h.id === assetId)
+      
+      showTransactionSuccess(
+        txHash,
+        "RWA Yield Claimed",
+        `Successfully claimed yield from ${asset?.name || 'RWA asset'}. Your earnings have been added to your balance!`
+      )
     } catch (error) {
       console.error('Yield claim failed:', error)
+      showTransactionError(
+        "Yield Claim Failed",
+        "Failed to claim RWA yield. Please try again.",
+        error
+      )
     }
   }
 
@@ -130,11 +142,22 @@ export default function PortfolioTab() {
       // Claim yield from all assets
       for (const holding of rwaHoldings) {
         if (holding.claimableYield > 0) {
-          await claimAssetYield(holding.id)
+          const txHash = await claimAssetYield(holding.id)
+          
+          showTransactionSuccess(
+            txHash,
+            "All Yields Claimed",
+            `Successfully claimed yield from all RWA investments. Total earnings added to your balance!`
+          )
         }
       }
     } catch (error) {
       console.error('Claim all failed:', error)
+      showTransactionError(
+        "Claim All Failed",
+        "Failed to claim all yields. Please try again.",
+        error
+      )
     }
   }
 

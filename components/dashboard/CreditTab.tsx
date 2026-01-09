@@ -20,6 +20,7 @@ import {
   Percent
 } from 'lucide-react'
 import { formatNumber, formatCurrency } from '@/lib/utils'
+import { showTransactionSuccess, showTransactionError } from '@/lib/transaction-utils'
 
 export default function CreditTab() {
   const { address } = useAccount()
@@ -87,46 +88,26 @@ export default function CreditTab() {
       console.log('Current USDY balance:', creditBalance)
       console.log('Credit symbol:', creditSymbol)
       
-      await getTokensFromFaucet()
+      const txHash = await getTokensFromFaucet()
       setCreditAmount('')
-      toast({
-        title: "✅ USDY Tokens Received!",
-        description: `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`,
-      })
+      
+      showTransactionSuccess(
+        txHash,
+        "USDY Tokens Received",
+        `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`
+      )
     } catch (error: any) {
       console.error('Faucet failed:', error)
-      
-      let title = "❌ Faucet Transaction Failed"
-      let description = "Unknown error occurred. Please try again."
-      
-      // Parse specific error messages
-      if (error?.message?.includes("Already have enough USDY")) {
-        title = "🚫 Maximum USDY Balance"
-        description = `You already have ${formatNumber(creditBalanceValue, 0)} USDY tokens. The faucet allows maximum 10,000 USDY per wallet.`
-      } else if (error?.message?.includes("execution reverted")) {
-        title = "⚠️ Transaction Reverted"
-        description = "The blockchain rejected this transaction. You may already have the maximum USDY balance or there's a network issue."
-      } else if (error?.message?.includes("insufficient funds")) {
-        title = "💰 Insufficient Gas Funds"
-        description = "You don't have enough MNT tokens to pay for gas fees. Please add MNT to your wallet."
-      } else if (error?.message?.includes("user rejected")) {
-        title = "🚫 Transaction Cancelled"
-        description = "You cancelled the transaction in your wallet."
-      } else if (error?.message?.includes("network")) {
-        title = "🌐 Network Error"
-        description = "Network connection issue. Please check your internet and try again."
-      }
-      
-      toast({
-        title,
-        description,
-        variant: "destructive",
-      })
+      showTransactionError(
+        "Faucet Transaction Failed",
+        "Failed to get USDY tokens from faucet.",
+        error
+      )
     }
   }
 
   const handleRepayCredit = async () => {
-    if (!repayAmount || parseFloat(repayAmount) <{
+    if (!repayAmount || parseFloat(repayAmount) <= 0) {
       toast({
         title: "⚠️ Invalid Amount",
         description: "Please enter a valid amount to claim yield.",
@@ -136,34 +117,21 @@ export default function CreditTab() {
     }
     
     try {
-      await claimTokenYield()
+      const txHash = await claimTokenYield()
       setRepayAmount('')
-      toast({
-        title: "✅ Yi `Successfd Successfully!",
-        description: `Successfully claimed ${creditSymbol} yield rewards. Check your balance!`,
-      })
+      
+      showTransactionSuccess(
+        txHash,
+        "Yield Claimed Successfully",
+        `Successfully claimed ${creditSymbol} yield rewards. Your USDY balance has been updated!`
+      )
     } catch (error: any) {
       console.error('Yield claim failed:', error)
-      
-      let title = "❌ Yield Claim Failed"
-      let description = "Unknown error occurred while claiming yield."
-      
-      if (error?.message?.includes("No yield to claim")) {
-        title = "ℹ️ No Yield Available"
-        description = "You don't have any yield to claim yet. Yield accrues over time based on your USDY balance."
-      } else if (error?.message?.includes("insus")) {
-        title = "💰 Insufficient Gas Funds"
-        description = "You don't have enough MNT tokens to pay for gas fees."
-      } else if (error?.message?.includes("user rejected")) {
-        title = "🚫 Transaction Cancelled"
-        description = "You cancelled the transaction in your wallet."
-      }
-      
-      toast({
-        title,
-        description,
-        variant: "destructive",
-      })
+      showTransactionError(
+        "Yield Claim Failed",
+        "Failed to claim USDY yield rewards.",
+        error
+      )
     }
   }
 

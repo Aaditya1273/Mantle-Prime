@@ -17,7 +17,11 @@ import {
 import { useStaking, useCreditToken, useRWAMarketplace, DEMO_MODE } from '@/hooks/useContractsUnified'
 import { formatNumber, formatCurrency } from '@/lib/utils'
 
-export default function OverviewTab() {
+interface OverviewTabProps {
+  onTabChange?: (tab: string) => void
+}
+
+export default function OverviewTab({ onTabChange }: OverviewTabProps = {}) {
   const { address } = useAccount()
   
   // Unified contract data
@@ -211,7 +215,10 @@ export default function OverviewTab() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700">
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => onTabChange?.('vault')}
+            >
               Go to Vault
             </Button>
           </CardContent>
@@ -228,7 +235,10 @@ export default function OverviewTab() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full bg-green-600 hover:bg-green-700">
+            <Button 
+              className="w-full bg-green-600 hover:bg-green-700"
+              onClick={() => onTabChange?.('credit')}
+            >
               Issue USDY
             </Button>
           </CardContent>
@@ -245,7 +255,10 @@ export default function OverviewTab() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full bg-purple-600 hover:bg-purple-700">
+            <Button 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              onClick={() => onTabChange?.('marketplace')}
+            >
               Browse Assets
             </Button>
           </CardContent>

@@ -16,6 +16,7 @@ import {
 import { useStaking } from '@/hooks/useContractsUnified'
 import { formatNumber, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { showTransactionSuccess, showTransactionError } from '@/lib/transaction-utils'
 
 export default function VaultTab() {
   const { address } = useAccount()
@@ -33,6 +34,8 @@ export default function VaultTab() {
     claimStakingYield,
     isStaking,
     isClaiming,
+    stakeHash,
+    claimHash,
     tokenSymbol,
     stakingAPY
   } = useStaking(address)
@@ -48,19 +51,21 @@ export default function VaultTab() {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
     
     try {
-      await stakeTokens(depositAmount)
+      const txHash = await stakeTokens(depositAmount)
       setDepositAmount('')
-      toast({
-        title: "Deposit Successful",
-        description: `Successfully staked ${depositAmount} ${tokenSymbol}`,
-      })
+      
+      showTransactionSuccess(
+        txHash,
+        "Staking Successful",
+        `Successfully staked ${depositAmount} ${tokenSymbol}. You're now earning ${stakingAPY} staking rewards!`
+      )
     } catch (error) {
       console.error('Deposit failed:', error)
-      toast({
-        title: "Deposit Failed",
-        description: `Failed to stake ${tokenSymbol}. Please try again.`,
-        variant: "destructive",
-      })
+      showTransactionError(
+        "Staking Failed",
+        `Failed to stake ${tokenSymbol}. Please try again.`,
+        error
+      )
     }
   }
 
@@ -77,18 +82,20 @@ export default function VaultTab() {
 
   const handleClaimYield = async () => {
     try {
-      await claimStakingYield()
-      toast({
-        title: "Yield Claimed",
-        description: `Successfully claimed ${pendingYield} ${tokenSymbol} yield`,
-      })
+      const txHash = await claimStakingYield()
+      
+      showTransactionSuccess(
+        txHash,
+        "Yield Claimed Successfully",
+        `Successfully claimed ${pendingYield} ${tokenSymbol} staking rewards. Keep staking to earn more!`
+      )
     } catch (error) {
       console.error('Claim failed:', error)
-      toast({
-        title: "Claim Failed",
-        description: "Failed to claim yield. Please try again.",
-        variant: "destructive",
-      })
+      showTransactionError(
+        "Yield Claim Failed",
+        "Failed to claim staking yield. Please try again.",
+        error
+      )
     }
   }
 
