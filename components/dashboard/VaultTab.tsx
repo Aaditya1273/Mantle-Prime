@@ -34,8 +34,6 @@ export default function VaultTab() {
     claimStakingYield,
     isStaking,
     isClaiming,
-    stakeHash,
-    claimHash,
     tokenSymbol,
     stakingAPY
   } = useStaking(address)
