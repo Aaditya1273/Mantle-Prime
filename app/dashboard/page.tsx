@@ -10,12 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Home, 
-  Wallet, 
-  CreditCard, 
-  Building, 
-  TrendingUp, 
+import { LogoWithText } from '@/components/ui/logo'
+import {
+  Home,
+  Wallet,
+  CreditCard,
+  Building,
+  TrendingUp,
   Settings,
   LogOut,
   ArrowUpRight,
@@ -52,11 +53,11 @@ export default function Dashboard() {
 
   if (!mounted || !isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <Card className="w-96 bg-white/5 border-white/10 backdrop-blur-sm">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Card className="w-96 bg-white border border-gray-200 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-white">Connect Wallet</CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardTitle className="text-black">Connect Wallet</CardTitle>
+            <CardDescription className="text-gray-600">
               Please connect your wallet to access Mantle Prime
             </CardDescription>
           </CardHeader>
@@ -77,36 +78,28 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-white">
       {/* Top Navigation */}
-      <nav className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
+      <nav className="border-b border-gray-200 bg-white">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MP</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Mantle Prime</h1>
-                <p className="text-xs text-gray-400">RWA Credit Marketplace</p>
-              </div>
-            </div>
+            <LogoWithText size="md" />
 
             {/* User Info & Actions */}
             <div className="flex items-center space-x-4">
               {/* Network Status */}
-              <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+              <Badge className="bg-green-100 text-green-800 border-green-200">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                 Mantle Network
               </Badge>
 
               {/* Wallet Info */}
               <div className="text-right">
-                <p className="text-sm text-white font-medium">
+                <p className="text-sm text-black font-medium">
                   {address?.slice(0, 6)}...{address?.slice(-4)}
                 </p>
-                <p className="text-xs text-gray-400">Connected</p>
+                <p className="text-xs text-gray-600">Connected</p>
               </div>
 
               {/* Connect Button */}
@@ -114,13 +107,13 @@ export default function Dashboard() {
 
               {/* Settings & Logout */}
               <div className="flex space-x-2">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-black">
                   <Settings className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-gray-400 hover:text-white"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-black"
                   onClick={() => disconnect()}
                 >
                   <LogOut className="h-4 w-4" />
@@ -135,12 +128,12 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-5 bg-black/20 border border-white/10">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-100 border border-gray-200">
             {navigationItems.map((item) => (
               <TabsTrigger
                 key={item.id}
                 value={item.id}
-                className="flex items-center space-x-2 data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400"
+                className="flex items-center space-x-2 data-[state=active]:bg-black data-[state=active]:text-white text-gray-700"
               >
                 <item.icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{item.label}</span>
@@ -174,18 +167,18 @@ export default function Dashboard() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm mt-12">
+      <footer className="border-t border-gray-200 bg-gray-50 mt-12">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center text-sm text-gray-400">
+          <div className="flex justify-between items-center text-sm text-gray-600">
             <div className="flex items-center space-x-4">
-              <span>© 2024 Mantle Prime</span>
+              <span>© 2026 Mantle Prime</span>
               <Separator orientation="vertical" className="h-4" />
               <span>Built on Mantle Network</span>
             </div>
             <div className="flex items-center space-x-4">
-              <a href="#" className="hover:text-white transition-colors">Docs</a>
-              <a href="#" className="hover:text-white transition-colors">Support</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <a href="#" className="hover:text-black transition-colors">Docs</a>
+              <a href="#" className="hover:text-black transition-colors">Support</a>
+              <a href="#" className="hover:text-black transition-colors">Terms</a>
             </div>
           </div>
         </div>

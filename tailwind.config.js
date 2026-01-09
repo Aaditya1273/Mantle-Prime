@@ -64,8 +64,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        'serif': ['Instrument Serif', 'Georgia', 'serif'],
-        'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'heading': ['var(--font-poppins)', 'Poppins', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'body': ['var(--font-poppins)', 'Poppins', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        'mono': ['var(--font-mono)', 'JetBrains Mono', 'Menlo', 'Monaco', 'monospace'],
+        'sans': ['var(--font-poppins)', 'Poppins', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       fontSize: {
         'yield': ['2.5rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],

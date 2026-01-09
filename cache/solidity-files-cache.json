@@ -1103,6 +1103,159 @@
       "artifacts": [
         "ImETH"
       ]
+    },
+    "C:\\Users\\Aditya\\OneDrive\\Desktop\\New folder\\New folder\\Mantle-Prime\\contracts\\mocks\\MockUSDY.sol": {
+      "lastModificationDate": 1767881777430,
+      "contentHash": "0ac57f4f18516ab778a5fd31b3725f49",
+      "sourceName": "contracts/mocks/MockUSDY.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "MockUSDY"
+      ]
+    },
+    "C:\\Users\\Aditya\\OneDrive\\Desktop\\New folder\\New folder\\Mantle-Prime\\contracts\\mocks\\MockMETH.sol": {
+      "lastModificationDate": 1767881760446,
+      "contentHash": "f0691dcc4664012ff640cd7fd1e56429",
+      "sourceName": "contracts/mocks/MockMETH.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "MockMETH"
+      ]
+    },
+    "C:\\Users\\Aditya\\OneDrive\\Desktop\\New folder\\New folder\\Mantle-Prime\\contracts\\simplified\\MantleStakingVault.sol": {
+      "lastModificationDate": 1767881745306,
+      "contentHash": "ba16b6ec2800c7efedac2fa01c05a2aa",
+      "sourceName": "contracts/simplified/MantleStakingVault.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "MantleStakingVault"
+      ]
+    },
+    "C:\\Users\\Aditya\\OneDrive\\Desktop\\New folder\\New folder\\Mantle-Prime\\contracts\\simplified\\SimplifiedCreditIssuer.sol": {
+      "lastModificationDate": 1767896460913,
+      "contentHash": "bf9beed9ba24462a7cd297e9a1aeb29d",
+      "sourceName": "contracts/simplified/SimplifiedCreditIssuer.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [],
+      "artifacts": []
     }
   }
 }

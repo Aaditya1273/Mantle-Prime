@@ -1,66 +1,80 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  console.log("🌱 Seeding Mantle Prime with sample RWA assets...\n");
-
-  // Load deployment addresses
-  const network = await ethers.provider.getNetwork();
-  const deploymentFile = `deployment-${network.chainId}.json`;
-  
-  let deploymentInfo;
-  try {
-    const fs = require('fs');
-    deploymentInfo = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'));
-  } catch (error) {
-    console.error("❌ Deployment file not found. Run deployment first.");
-    process.exit(1);
-  }
+  console.log("🌱 Seeding RWA Marketplace with Sample Assets...\n");
 
   const [deployer] = await ethers.getSigners();
   console.log("Seeding with account:", deployer.address);
 
-  // Get contract instances
-  const rwaMarketplace = await ethers.getContractAt("RWAMarketplace", deploymentInfo.contracts.RWAMarketplace);
-  const compliance = await ethers.getContractAt("ComplianceModule", deploymentInfo.contracts.ComplianceModule);
+  // Load deployed contract addresses
+  const deploymentFile = `deployment-5003.json`;
+  let deployment;
+  try {
+    deployment = require(`../${deploymentFile}`);
+  } catch (error) {
+    console.error("❌ Deployment file not found. Please deploy contracts first.");
+    process.exit(1);
+  }
 
-  console.log("📋 Creating sample RWA assets for demo...\n");
+  // Connect to RWA Marketplace
+  const RWAMarketplace = await ethers.getContractFactory("RWAMarketplace");
+  const marketplace = RWAMarketplace.attach(deployment.contracts.RWAMarketplace);
 
-  // Sample RWA assets for demo
+  console.log("Connected to RWAMarketplace:", deployment.contracts.RWAMarketplace);
+
+  // Sample RWA Assets to create
   const sampleAssets = [
     {
       name: "Miami Beach Luxury Apartment",
       assetType: "real_estate",
-      totalValue: ethers.parseEther("500000"), // $500k
-      totalShares: 10000,
-      pricePerShare: ethers.parseEther("50"), // $50 per share
-      expectedYield: 800 // 8% annual yield
+      totalValue: ethers.parseUnits("500000", 6), // $500k USDY
+      totalShares: 10000n,
+      pricePerShare: ethers.parseUnits("50", 6), // $50 per share
+      expectedYield: 800n // 8% APY in basis points
     },
     {
       name: "Corporate Bond Portfolio",
-      assetType: "private_debt",
-      totalValue: ethers.parseEther("1000000"), // $1M
-      totalShares: 20000,
-      pricePerShare: ethers.parseEther("50"), // $50 per share
-      expectedYield: 600 // 6% annual yield
+      assetType: "private_debt", 
+      totalValue: ethers.parseUnits("1000000", 6), // $1M USDY
+      totalShares: 20000n,
+      pricePerShare: ethers.parseUnits("50", 6), // $50 per share
+      expectedYield: 650n // 6.5% APY
+    },
+    {
+      name: "Renewable Energy Project",
+      assetType: "infrastructure",
+      totalValue: ethers.parseUnits("750000", 6), // $750k USDY
+      totalShares: 15000n,
+      pricePerShare: ethers.parseUnits("50", 6), // $50 per share
+      expectedYield: 920n // 9.2% APY
     },
     {
       name: "Commercial Real Estate Fund",
       assetType: "real_estate",
-      totalValue: ethers.parseEther("2000000"), // $2M
-      totalShares: 40000,
-      pricePerShare: ethers.parseEther("50"), // $50 per share
-      expectedYield: 750 // 7.5% annual yield
+      totalValue: ethers.parseUnits("2000000", 6), // $2M USDY
+      totalShares: 40000n,
+      pricePerShare: ethers.parseUnits("50", 6), // $50 per share
+      expectedYield: 750n // 7.5% APY
+    },
+    {
+      name: "Art Collection Fund",
+      assetType: "alternative",
+      totalValue: ethers.parseUnits("300000", 6), // $300k USDY
+      totalShares: 6000n,
+      pricePerShare: ethers.parseUnits("50", 6), // $50 per share
+      expectedYield: 1200n // 12% APY
     }
   ];
 
-  // Create assets
+  console.log(`\n📋 Creating ${sampleAssets.length} sample RWA assets...\n`);
+
   for (let i = 0; i < sampleAssets.length; i++) {
     const asset = sampleAssets[i];
     
-    console.log(`${i + 1}️⃣ Creating: ${asset.name}`);
-    
     try {
-      const tx = await rwaMarketplace.createAsset(
+      console.log(`${i + 1}️⃣ Creating: ${asset.name}`);
+      
+      const tx = await marketplace.createAsset(
         asset.name,
         asset.assetType,
         asset.totalValue,
@@ -70,27 +84,48 @@ async function main() {
       );
       
       const receipt = await tx.wait();
-      console.log(`✅ Created asset ID ${i + 1} - Gas used: ${receipt.gasUsed.toString()}`);
+      
+      // Find the AssetCreated event
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = marketplace.interface.parseLog(log);
+          return parsed.name === 'AssetCreated';
+        } catch {
+          return false;
+        }
+      });
+      
+      if (event) {
+        const parsedEvent = marketplace.interface.parseLog(event);
+        const assetId = parsedEvent.args.assetId;
+        console.log(`   ✅ Asset ID: ${assetId} | ${asset.expectedYield / 100n}% APY`);
+      } else {
+        console.log(`   ✅ Created successfully`);
+      }
       
     } catch (error) {
-      console.error(`❌ Failed to create ${asset.name}:`, error.message);
+      console.error(`   ❌ Failed to create ${asset.name}:`, error.message);
     }
   }
 
-  console.log("\n📊 Sample assets created successfully!");
-  console.log("\n🎯 Demo Flow Ready:");
-  console.log("1. Users can deposit mETH to PrimeVault");
-  console.log("2. Issue USDY credit lines via CreditIssuer");
-  console.log("3. Purchase fractional RWA shares with credit");
-  console.log("4. Earn double yield: mETH staking + RWA yields");
+  console.log("\n🎉 RWA Marketplace seeded successfully!");
+  console.log("\n📊 Marketplace Summary:");
+  console.log("=====================================");
   
-  console.log("\n📋 Contract Addresses:");
-  console.log("ComplianceModule: ", deploymentInfo.contracts.ComplianceModule);
-  console.log("PrimeVault:       ", deploymentInfo.contracts.PrimeVault);
-  console.log("CreditIssuer:     ", deploymentInfo.contracts.CreditIssuer);
-  console.log("RWAMarketplace:   ", deploymentInfo.contracts.RWAMarketplace);
-  
-  console.log("\n🚀 Mantle Prime MVP is production ready!");
+  try {
+    const totalAssets = await marketplace.totalAssetsCreated();
+    console.log(`Total Assets Created: ${totalAssets}`);
+    console.log(`Marketplace Address: ${deployment.contracts.RWAMarketplace}`);
+    console.log(`Creator Address: ${deployer.address}`);
+  } catch (error) {
+    console.log("Could not fetch marketplace summary");
+  }
+
+  console.log("\n🚀 Ready to test the platform!");
+  console.log("1. Open http://localhost:3000");
+  console.log("2. Connect wallet to Mantle Sepolia Testnet");
+  console.log("3. Navigate to Marketplace tab");
+  console.log("4. Browse and purchase RWA shares!");
 }
 
 main()

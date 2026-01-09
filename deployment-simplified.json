@@ -1,0 +1,66 @@
+{
+  "network": "mantle-sepolia-testnet",
+  "timestamp": "2026-01-08T00:00:00.000Z",
+  "deployer": "0x8bB9b052ad7ec275b46bfcDe425309557EFFAb07",
+  "approach": "simplified-native-mnt",
+  "contracts": {
+    "MantleStakingVault": "0x5F18fe5bF76466CacD97E855C471E6F017603583",
+    "MockUSDY": "0xBa8B2a116cbb0240Be18Ad7E4989CffC445Ee6d9",
+    "ComplianceModule": "0x9998FE942B5D873c5324295a5F1793DFCB6D5510",
+    "RWAMarketplace": "0x703C397732f6F13D11Ee71154B462969C5CF75f4"
+  },
+  "demoSetup": {
+    "rwaAssetsCreated": 5,
+    "vaultYieldPool": "10 MNT",
+    "deployerMockUSDY": "10000",
+    "whitelistedUsers": ["0x8bB9b052ad7ec275b46bfcDe425309557EFFAb07"]
+  },
+  "userFlow": {
+    "step1": "User stakes MNT in MantleStakingVault to earn 4.2% APY",
+    "step2": "User gets MockUSDY from faucet (simulates credit line)",
+    "step3": "User invests USDY in RWA assets (8-12% APY)",
+    "step4": "User earns double yield: MNT staking + RWA returns"
+  },
+  "assets": [
+    {
+      "id": 1,
+      "name": "Miami Beach Luxury Apartment",
+      "type": "real_estate",
+      "apy": "8.0%",
+      "shares": 10000,
+      "price": "50 USDY"
+    },
+    {
+      "id": 2,
+      "name": "Corporate Bond Portfolio",
+      "type": "private_debt",
+      "apy": "6.5%",
+      "shares": 20000,
+      "price": "50 USDY"
+    },
+    {
+      "id": 3,
+      "name": "Renewable Energy Project",
+      "type": "infrastructure",
+      "apy": "9.2%",
+      "shares": 15000,
+      "price": "50 USDY"
+    },
+    {
+      "id": 4,
+      "name": "Commercial Real Estate Fund",
+      "type": "real_estate",
+      "apy": "7.5%",
+      "shares": 40000,
+      "price": "50 USDY"
+    },
+    {
+      "id": 5,
+      "name": "Art Collection Fund",
+      "type": "alternative",
+      "apy": "12.0%",
+      "shares": 6000,
+      "price": "50 USDY"
+    }
+  ]
+}

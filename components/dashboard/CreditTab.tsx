@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
-import { parseUnits, formatUnits } from 'viem'
-import { CONTRACTS, TOKENS, CREDIT_ISSUER_ABI, ERC20_ABI } from '@/lib/wagmi'
+import { useState } from 'react'
+import { useAccount } from 'wagmi'
+import { useStaking, useCreditToken } from '@/hooks/useContractsUnified'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,10 +15,8 @@ import {
   CreditCard, 
   Plus, 
   Minus, 
-  TrendingUp,
   AlertTriangle,
   Info,
-  DollarSign,
   Percent
 } from 'lucide-react'
 import { formatNumber, formatCurrency } from '@/lib/utils'
@@ -29,209 +26,287 @@ export default function CreditTab() {
   const { toast } = useToast()
   const [creditAmount, setCreditAmount] = useState('')
   const [repayAmount, setRepayAmount] = useState('')
-  const [isIssuing, setIsIssuing] = useState(false)
-  const [isRepaying, setIsRepaying] = useState(false)
 
-  // Mock data - replace with real contract reads
-  const [creditData, setCreditData] = useState({
-    collateralValue: 125000,
-    maxBorrowCapacity: 100000, // 80% of collateral
-    creditIssued: 75000,
-    availableCredit: 25000,
-    interestRate: 3.5,
-    healthFactor: 1.67,
-    totalDebt: 76312.50, // Principal + interest
-    interestAccrued: 1312.50,
-    usdyBalance: 5000,
-    originationFee: 0.3
-  })
+  // Unified contract data
+  const { stakedAmount, tokenSymbol } = useStaking(address)
+  const {
+    balance: creditBalance,
+    getTokensFromFaucet,
+    claimTokenYield,
+    isFauceting,
+    isClaiming,
+    tokenSymbol: creditSymbol,
+    hasFaucet
+  } = useCreditToken(address)
+
+  // Calculate derived values from real data
+  const tokenPrice = tokenSymbol === 'MNT' ? 0.85 : 2500 // MNT ~$0.85, mETH ~$2500
+  const collateralValue = parseFloat(stakedAmount || '0') * tokenPrice
+  const maxBorrowCapacity = collateralValue * 0.8 // 80% LTV
+  const creditBalanceValue = parseFloat(creditBalance || '0')
+  const interestRate = 3.5 // Fixed rate for now
+  const totalDebt = creditBalanceValue * 1.0175 // Add 1.75% interest for demo
+  const interestAccrued = totalDebt - creditBalanceValue
+  const originationFee = 0.3
+  const healthFactor = totalDebt > 0 ? collateralValue / totalDebt : 0
+
+  const utilizationRate = maxBorrowCapacity > 0 ? (creditBalanceValue / maxBorrowCapacity) * 100 : 0
+  const maxNewCredit = Math.max(0, maxBorrowCapacity - creditBalanceValue) // Ensure it's never negative
 
   const handleIssueCredit = async () => {
-    if (!creditAmount || parseFloat(creditAmount) <= 0) return
-    
-    setIsIssuing(true)
-    try {
-      console.log('Issuing credit line...')
-      
-      // Mock transaction
-      setTimeout(() => {
-        const amount = parseFloat(creditAmount)
-        const fee = amount * (creditData.originationFee / 100)
-        const netAmount = amount - fee
-        
-        setCreditData(prev => ({
-          ...prev,
-          creditIssued: prev.creditIssued + amount,
-          availableCredit: prev.availableCredit - amount,
-          totalDebt: prev.totalDebt + amount,
-          usdyBalance: prev.usdyBalance + netAmount
-        }))
-        setCreditAmount('')
-        setIsIssuing(false)
-        toast({
-          title: "Credit Issued Successfully",
-          description: `Issued ${formatCurrency(amount)} USDY credit line`,
-          variant: "success",
-        })
-      }, 2000)
-
-    } catch (error) {
-      console.error('Credit issuance failed:', error)
-      setIsIssuing(false)
+    // Validation checks with user-friendly messages
+    if (!hasFaucet) {
       toast({
-        title: "Credit Issuance Failed",
-        description: "Failed to issue credit line. Please try again.",
+        title: "❌ Faucet Not Available",
+        description: "The USDY faucet is not available in this mode. Please check your network connection.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!creditAmount || parseFloat(creditAmount) <= 0) {
+      toast({
+        title: "⚠️ Invalid Amount",
+        description: "Please enter a valid credit amount greater than 0.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (creditBalanceValue >= 10000) {
+      toast({
+        title: "🚫 Maximum Balance Reached",
+        description: `You already have ${formatNumber(creditBalanceValue, 0)} USDY tokens. The faucet limit is 10,000 USDY per wallet.`,
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+      console.log('Attempting to get USDY from faucet...')
+      console.log('Current USDY balance:', creditBalance)
+      console.log('Credit symbol:', creditSymbol)
+      
+      await getTokensFromFaucet()
+      setCreditAmount('')
+      toast({
+        title: "✅ USDY Tokens Received!",
+        description: `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`,
+      })
+    } catch (error: any) {
+      console.error('Faucet failed:', error)
+      
+      let title = "❌ Faucet Transaction Failed"
+      let description = "Unknown error occurred. Please try again."
+      
+      // Parse specific error messages
+      if (error?.message?.includes("Already have enough USDY")) {
+        title = "🚫 Maximum USDY Balance"
+        description = `You already have ${formatNumber(creditBalanceValue, 0)} USDY tokens. The faucet allows maximum 10,000 USDY per wallet.`
+      } else if (error?.message?.includes("execution reverted")) {
+        title = "⚠️ Transaction Reverted"
+        description = "The blockchain rejected this transaction. You may already have the maximum USDY balance or there's a network issue."
+      } else if (error?.message?.includes("insufficient funds")) {
+        title = "💰 Insufficient Gas Funds"
+        description = "You don't have enough MNT tokens to pay for gas fees. Please add MNT to your wallet."
+      } else if (error?.message?.includes("user rejected")) {
+        title = "🚫 Transaction Cancelled"
+        description = "You cancelled the transaction in your wallet."
+      } else if (error?.message?.includes("network")) {
+        title = "🌐 Network Error"
+        description = "Network connection issue. Please check your internet and try again."
+      }
+      
+      toast({
+        title,
+        description,
         variant: "destructive",
       })
     }
   }
 
   const handleRepayCredit = async () => {
-    if (!repayAmount || parseFloat(repayAmount) <= 0) return
-    
-    setIsRepaying(true)
-    try {
-      console.log('Repaying credit...')
-      
-      // Mock transaction
-      setTimeout(() => {
-        const amount = parseFloat(repayAmount)
-        
-        setCreditData(prev => ({
-          ...prev,
-          creditIssued: Math.max(0, prev.creditIssued - amount),
-          availableCredit: prev.availableCredit + amount,
-          totalDebt: Math.max(0, prev.totalDebt - amount),
-          usdyBalance: Math.max(0, prev.usdyBalance - amount)
-        }))
-        setRepayAmount('')
-        setIsRepaying(false)
-        toast({
-          title: "Credit Repaid Successfully",
-          description: `Repaid ${formatCurrency(amount)} USDY`,
-          variant: "success",
-        })
-      }, 2000)
-
-    } catch (error) {
-      console.error('Credit repayment failed:', error)
-      setIsRepaying(false)
+    if (!repayAmount || parseFloat(repayAmount) <{
       toast({
-        title: "Repayment Failed",
-        description: "Failed to repay credit. Please try again.",
+        title: "⚠️ Invalid Amount",
+        description: "Please enter a valid amount to claim yield.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+      await claimTokenYield()
+      setRepayAmount('')
+      toast({
+        title: "✅ Yi `Successfd Successfully!",
+        description: `Successfully claimed ${creditSymbol} yield rewards. Check your balance!`,
+      })
+    } catch (error: any) {
+      console.error('Yield claim failed:', error)
+      
+      let title = "❌ Yield Claim Failed"
+      let description = "Unknown error occurred while claiming yield."
+      
+      if (error?.message?.includes("No yield to claim")) {
+        title = "ℹ️ No Yield Available"
+        description = "You don't have any yield to claim yet. Yield accrues over time based on your USDY balance."
+      } else if (error?.message?.includes("insus")) {
+        title = "💰 Insufficient Gas Funds"
+        description = "You don't have enough MNT tokens to pay for gas fees."
+      } else if (error?.message?.includes("user rejected")) {
+        title = "🚫 Transaction Cancelled"
+        description = "You cancelled the transaction in your wallet."
+      }
+      
+      toast({
+        title,
+        description,
         variant: "destructive",
       })
     }
   }
-
-  const utilizationRate = (creditData.creditIssued / creditData.maxBorrowCapacity) * 100
-  const maxNewCredit = Math.min(creditData.availableCredit, creditData.maxBorrowCapacity - creditData.creditIssued)
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center">
+          <h2 className="text-3xl font-bold text-black mb-2 flex items-center">
             <CreditCard className="w-8 h-8 mr-3" />
             USDY Credit Lines
           </h2>
-          <p className="text-gray-300">
+          <p className="text-gray-600">
             Issue over-collateralized USDY credit against your mETH deposits
           </p>
         </div>
         
-        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+        <Badge className="bg-green-100 text-green-800 border-green-200">
           <Percent className="w-3 h-3 mr-1" />
-          {creditData.interestRate}% APR
+          {interestRate}% APR
         </Badge>
       </div>
 
       {/* Credit Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Max Capacity</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Max Capacity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatCurrency(creditData.maxBorrowCapacity)}
+            <div className="text-2xl font-bold text-black">
+              {formatCurrency(maxBorrowCapacity)}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               80% of collateral value
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Credit Issued</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Credit Issued</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatCurrency(creditData.creditIssued)}
+            <div className="text-2xl font-bold text-black">
+              {formatCurrency(creditBalanceValue)}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Principal amount borrowed
+            <p className="text-xs text-gray-500 mt-1">
+              Current {creditSymbol} balance
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Available Credit</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Available Credit</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-400">
-              {formatCurrency(creditData.availableCredit)}
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(Math.max(0, maxNewCredit))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Ready to borrow
+            <p className="text-xs text-gray-500 mt-1">
+              {maxBorrowCapacity === 0 ? 'Stake tokens to unlock credit' : 'Available to borrow'}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">USDY Balance</CardTitle>
+            <CardTitle className="text-sm text-gray-600">{creditSymbol} Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-400">
-              {formatCurrency(creditData.usdyBalance)}
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(creditBalanceValue)}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               Available for RWA purchases
             </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* User Guidance Section */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-blue-800 flex items-center">
+            <Info className="w-5 h-5 mr-2" />
+            How Credit Lines Work
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="flex items-start space-x-2">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+              <div>
+                <p className="font-medium text-blue-800">Stake Collateral</p>
+                <p className="text-blue-600">Stake {tokenSymbol} tokens in the Vault to unlock credit</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-2">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+              <div>
+                <p className="font-medium text-blue-800">Get USDY Tokens</p>
+                <p className="text-blue-600">Use faucet to get USDY for RWA investments</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-2">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+              <div>
+                <p className="font-medium text-blue-800">Invest in RWAs</p>
+                <p className="text-blue-600">Buy fractional real-world assets in Marketplace</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Credit Actions */}
       <Tabs defaultValue="issue" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 bg-black/20 border border-white/10">
-          <TabsTrigger value="issue" className="data-[state=active]:bg-white/10">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-50 border border-gray-200">
+          <TabsTrigger value="issue" className="data-[state=active]:bg-white">
             Issue Credit
           </TabsTrigger>
-          <TabsTrigger value="repay" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="repay" className="data-[state=active]:bg-white">
             Repay Credit
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="issue" className="space-y-6">
-          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Plus className="w-5 h-5 mr-2 text-green-400" />
+              <CardTitle className="text-black flex items-center">
+                <Plus className="w-5 h-5 mr-2 text-green-600" />
                 Issue USDY Credit Line
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-gray-600">
                 Mint USDY stablecoin against your mETH collateral
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="credit-amount" className="text-gray-300">
+                  <Label htmlFor="credit-amount" className="text-gray-600">
                     Credit Amount (USDY)
                   </Label>
                   <div className="relative">
@@ -240,58 +315,81 @@ export default function CreditTab() {
                       type="number"
                       placeholder="0.00"
                       value={creditAmount}
-                      onChange={(e) => setCreditAmount(e.target.value)}
-                      className="bg-white/5 border-white/20 text-white pr-16"
+                      onChange={(e) => {
+                        const value = e.target.value
+                        // Only allow positive numbers
+                        if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                          setCreditAmount(value)
+                        }
+                      }}
+                      className="bg-white border-gray-300 text-black pr-16"
+                      min="0"
+                      step="0.01"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
                       USDY
                     </div>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">
-                      Available: {formatCurrency(maxNewCredit)}
+                    <span className="text-gray-500">
+                      Available: {formatCurrency(Math.max(0, maxNewCredit))}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-400 hover:text-blue-300 p-0 h-auto"
-                      onClick={() => setCreditAmount(maxNewCredit.toString())}
-                    >
-                      Max
-                    </Button>
+                    {maxNewCredit > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 p-0 h-auto"
+                        onClick={() => setCreditAmount(Math.max(0, maxNewCredit).toString())}
+                      >
+                        Max
+                      </Button>
+                    )}
                   </div>
+                  
+                  {/* Input validation messages */}
+                  {creditAmount && parseFloat(creditAmount) > maxNewCredit && (
+                    <p className="text-sm text-red-600 mt-1">
+                      ⚠️ Amount exceeds available credit limit of {formatCurrency(maxNewCredit)}
+                    </p>
+                  )}
+                  
+                  {!creditAmount && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      💡 Enter amount to get USDY tokens from faucet (max 5,000 per transaction)
+                    </p>
+                  )}
                 </div>
 
                 {/* Credit Preview */}
                 {creditAmount && parseFloat(creditAmount) > 0 && (
-                  <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3">
-                    <h4 className="text-green-300 font-semibold">Transaction Preview</h4>
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                    <h4 className="text-green-800 font-semibold">Transaction Preview</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-300">Credit Amount:</span>
-                        <span className="text-white font-semibold">
+                        <span className="text-gray-600">Credit Amount:</span>
+                        <span className="text-black font-semibold">
                           {formatCurrency(parseFloat(creditAmount))}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-300">Origination Fee ({creditData.originationFee}%):</span>
-                        <span className="text-red-300">
-                          -{formatCurrency(parseFloat(creditAmount) * (creditData.originationFee / 100))}
+                        <span className="text-gray-600">Origination Fee ({originationFee}%):</span>
+                        <span className="text-red-600">
+                          -{formatCurrency(parseFloat(creditAmount) * (originationFee / 100))}
                         </span>
                       </div>
-                      <div className="flex justify-between border-t border-white/10 pt-2">
-                        <span className="text-gray-300">You Receive:</span>
-                        <span className="text-green-400 font-semibold">
-                          {formatCurrency(parseFloat(creditAmount) * (1 - creditData.originationFee / 100))} USDY
+                      <div className="flex justify-between border-t border-gray-200 pt-2">
+                        <span className="text-gray-600">You Receive:</span>
+                        <span className="text-green-600 font-semibold">
+                          {formatCurrency(parseFloat(creditAmount) * (1 - originationFee / 100))} USDY
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-300">New Health Factor:</span>
+                        <span className="text-gray-600">New Health Factor:</span>
                         <span className={`font-semibold ${
-                          (creditData.collateralValue / (creditData.totalDebt + parseFloat(creditAmount))) >= 1.5 
-                            ? 'text-green-400' : 'text-yellow-400'
+                          (collateralValue / (totalDebt + parseFloat(creditAmount))) >= 1.5 
+                            ? 'text-green-600' : 'text-yellow-600'
                         }`}>
-                          {formatNumber(creditData.collateralValue / (creditData.totalDebt + parseFloat(creditAmount)), 2)}x
+                          {formatNumber(collateralValue / (totalDebt + parseFloat(creditAmount)), 2)}x
                         </span>
                       </div>
                     </div>
@@ -300,31 +398,69 @@ export default function CreditTab() {
 
                 <Button 
                   onClick={handleIssueCredit}
-                  disabled={!creditAmount || parseFloat(creditAmount) <= 0 || parseFloat(creditAmount) > maxNewCredit || isIssuing}
+                  disabled={
+                    !hasFaucet || 
+                    isFauceting || 
+                    creditBalanceValue >= 10000 ||
+                    !creditAmount || 
+                    parseFloat(creditAmount || '0') <= 0
+                  }
                   className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                 >
-                  {isIssuing ? 'Issuing Credit...' : 'Issue USDY Credit'}
+                  {isFauceting ? 'Getting Tokens...' : 
+                   creditBalanceValue >= 10000 ? 'Maximum USDY Reached (10,000 Limit)' : 
+                   !creditAmount || parseFloat(creditAmount || '0') <= 0 ? 'Enter Amount First' :
+                   `Get ${creditSymbol} from Faucet`}
                 </Button>
+                
+                {/* User-friendly status messages */}
+                {creditBalanceValue >= 10000 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mr-2" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">Maximum USDY Balance Reached</p>
+                        <p className="text-xs text-amber-600 mt-1">
+                          You have {formatNumber(creditBalanceValue, 0)} USDY. Faucet limit is 10,000 USDY per wallet.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {maxBorrowCapacity === 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                    <div className="flex items-center">
+                      <Info className="h-4 w-4 text-blue-600 mr-2" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">No Collateral Staked</p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Stake {tokenSymbol} tokens in the Vault tab to unlock credit lines.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="repay" className="space-y-6">
-          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Minus className="w-5 h-5 mr-2 text-red-400" />
+              <CardTitle className="text-black flex items-center">
+                <Minus className="w-5 h-5 mr-2 text-red-600" />
                 Repay Credit Line
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-gray-600">
                 Repay your USDY debt to free up collateral
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="repay-amount" className="text-gray-300">
+                  <Label htmlFor="repay-amount" className="text-gray-600">
                     Repayment Amount (USDY)
                   </Label>
                   <div className="relative">
@@ -334,21 +470,21 @@ export default function CreditTab() {
                       placeholder="0.00"
                       value={repayAmount}
                       onChange={(e) => setRepayAmount(e.target.value)}
-                      className="bg-white/5 border-white/20 text-white pr-16"
+                      className="bg-white border-gray-300 text-black pr-16"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
                       USDY
                     </div>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">
-                      Balance: {formatCurrency(creditData.usdyBalance)} USDY
+                    <span className="text-gray-500">
+                      Balance: {formatCurrency(creditBalanceValue)} {creditSymbol}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-blue-400 hover:text-blue-300 p-0 h-auto"
-                      onClick={() => setRepayAmount(Math.min(creditData.usdyBalance, creditData.totalDebt).toString())}
+                      className="text-blue-600 hover:text-blue-700 p-0 h-auto"
+                      onClick={() => setRepayAmount(Math.min(creditBalanceValue, totalDebt).toString())}
                     >
                       Max
                     </Button>
@@ -356,30 +492,30 @@ export default function CreditTab() {
                 </div>
 
                 {/* Debt Breakdown */}
-                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-2">
-                  <h4 className="text-blue-300 font-semibold">Current Debt</h4>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                  <h4 className="text-blue-800 font-semibold">Current Debt</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Principal:</span>
-                      <span className="text-white">{formatCurrency(creditData.creditIssued)}</span>
+                      <span className="text-gray-600">Principal:</span>
+                      <span className="text-black">{formatCurrency(creditBalanceValue)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">Interest Accrued:</span>
-                      <span className="text-yellow-400">{formatCurrency(creditData.interestAccrued)}</span>
+                      <span className="text-gray-600">Interest Accrued:</span>
+                      <span className="text-yellow-600">{formatCurrency(interestAccrued)}</span>
                     </div>
-                    <div className="flex justify-between border-t border-white/10 pt-1">
-                      <span className="text-gray-300 font-semibold">Total Debt:</span>
-                      <span className="text-white font-semibold">{formatCurrency(creditData.totalDebt)}</span>
+                    <div className="flex justify-between border-t border-gray-200 pt-1">
+                      <span className="text-gray-600 font-semibold">Total Debt:</span>
+                      <span className="text-black font-semibold">{formatCurrency(totalDebt)}</span>
                     </div>
                   </div>
                 </div>
 
                 <Button 
                   onClick={handleRepayCredit}
-                  disabled={!repayAmount || parseFloat(repayAmount) <= 0 || parseFloat(repayAmount) > creditData.usdyBalance || isRepaying}
+                  disabled={!repayAmount || parseFloat(repayAmount) <= 0 || parseFloat(repayAmount) > creditBalanceValue || isClaiming}
                   className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 >
-                  {isRepaying ? 'Repaying...' : 'Repay Credit'}
+                  {isClaiming ? 'Claiming Yield...' : 'Claim Yield'}
                 </Button>
               </div>
             </CardContent>
@@ -391,23 +527,23 @@ export default function CreditTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Utilization Status */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white">Credit Utilization</CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardTitle className="text-black">Credit Utilization</CardTitle>
+            <CardDescription className="text-gray-600">
               Monitor your borrowing capacity usage
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-300">Utilization Rate</span>
-                <span className="text-white font-semibold">
+                <span className="text-gray-600">Utilization Rate</span>
+                <span className="text-black font-semibold">
                   {formatNumber(utilizationRate, 1)}%
                 </span>
               </div>
               <Progress value={utilizationRate} className="h-3" />
-              <div className="flex justify-between text-xs text-gray-400">
+              <div className="flex justify-between text-xs text-gray-500">
                 <span>0%</span>
                 <span>100%</span>
               </div>
@@ -415,16 +551,16 @@ export default function CreditTab() {
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="text-gray-300">Interest Rate</div>
-                <div className="text-white font-semibold">{creditData.interestRate}% APR</div>
+                <div className="text-gray-600">Interest Rate</div>
+                <div className="text-black font-semibold">{interestRate}% APR</div>
               </div>
               <div>
-                <div className="text-gray-300">Health Factor</div>
+                <div className="text-gray-600">Health Factor</div>
                 <div className={`font-semibold ${
-                  creditData.healthFactor >= 1.5 ? 'text-green-400' : 
-                  creditData.healthFactor >= 1.2 ? 'text-yellow-400' : 'text-red-400'
+                  healthFactor >= 1.5 ? 'text-green-600' : 
+                  healthFactor >= 1.2 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {creditData.healthFactor}x
+                  {formatNumber(healthFactor, 2)}x
                 </div>
               </div>
             </div>
@@ -432,43 +568,43 @@ export default function CreditTab() {
         </Card>
 
         {/* Risk Information */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
+            <CardTitle className="text-black flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
               Risk Management
             </CardTitle>
-            <CardDescription className="text-gray-300">
+            <CardDescription className="text-gray-600">
               Important information about your credit position
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex items-start space-x-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <Info className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start space-x-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <Info className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="text-yellow-200 font-medium">Liquidation Risk</p>
-                  <p className="text-yellow-300/80">
+                  <p className="text-yellow-800 font-medium">Liquidation Risk</p>
+                  <p className="text-yellow-700">
                     Your position will be liquidated if health factor drops below 1.2x
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="text-blue-200 font-medium">Interest Accrual</p>
-                  <p className="text-blue-300/80">
-                    Interest compounds continuously at {creditData.interestRate}% APR
+                  <p className="text-blue-800 font-medium">Interest Accrual</p>
+                  <p className="text-blue-700">
+                    Interest compounds continuously at {interestRate}% APR
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <Info className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <Info className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="text-green-200 font-medium">USDY Benefits</p>
-                  <p className="text-green-300/80">
+                  <p className="text-green-800 font-medium">USDY Benefits</p>
+                  <p className="text-green-700">
                     USDY earns yield while you hold it, offsetting some interest costs
                   </p>
                 </div>

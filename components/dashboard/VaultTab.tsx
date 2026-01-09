@@ -1,25 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useReadContract } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { useState } from 'react'
+import { useAccount } from 'wagmi'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
 import { 
   Wallet, 
   ArrowDownLeft, 
   ArrowUpRight, 
-  TrendingUp,
-  Shield,
-  AlertTriangle,
-  Info
+  TrendingUp
 } from 'lucide-react'
-import { CONTRACTS, TOKENS, PRIME_VAULT_ABI, ERC20_ABI } from '@/lib/wagmi'
+import { useStaking } from '@/hooks/useContractsUnified'
 import { formatNumber, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
@@ -28,87 +22,43 @@ export default function VaultTab() {
   const { toast } = useToast()
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [isDepositing, setIsDepositing] = useState(false)
-  const [isWithdrawing, setIsWithdrawing] = useState(false)
 
-  // Mock data - replace with real contract reads
-  const [vaultData, setVaultData] = useState({
-    mETHBalance: 25.5,
-    mETHDeposited: 50.0,
-    collateralValue: 125000, // USD value
-    availableCollateral: 45000,
-    creditUsed: 75000,
-    healthFactor: 1.67,
-    stakingAPY: 4.2,
-    totalEarned: 2.1
-  })
+  // Real contract data using unified hooks
+  const {
+    tokenBalance,
+    stakedAmount,
+    pendingYield,
+    totalStaked,
+    stakeTokens,
+    claimStakingYield,
+    isStaking,
+    isClaiming,
+    tokenSymbol,
+    stakingAPY
+  } = useStaking(address)
 
-  // Real contract integration (uncomment when contracts are deployed)
-  /*
-  const { data: mETHBalance } = useReadContract({
-    address: TOKENS.mETH,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: [address],
-  })
-
-  const { data: userDeposits } = useReadContract({
-    address: CONTRACTS.PrimeVault,
-    abi: PRIME_VAULT_ABI,
-    functionName: 'userDeposits',
-    args: [address],
-  })
-
-  const { writeContract: depositMETH } = useWriteContract()
-  */
+  // Calculate derived values
+  const tokenPrice = tokenSymbol === 'MNT' ? 0.85 : 2500 // MNT ~$0.85, mETH ~$2500
+  const userDepositValue = parseFloat(stakedAmount) * tokenPrice
+  const apyNumber = parseFloat(stakingAPY.replace('%', ''))
+  const monthlyYield = userDepositValue * (apyNumber / 100) / 12
+  const healthFactor = 1.67 // Mock for now - calculate from credit usage
 
   const handleDeposit = async () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
     
-    setIsDepositing(true)
     try {
-      // Step 1: Approve mETH spending
-      console.log('Approving mETH spending...')
-      // await writeContract({
-      //   address: TOKENS.mETH,
-      //   abi: ERC20_ABI,
-      //   functionName: 'approve',
-      //   args: [CONTRACTS.PrimeVault, parseEther(depositAmount)],
-      // })
-
-      // Step 2: Deposit to vault
-      console.log('Depositing to vault...')
-      // await writeContract({
-      //   address: CONTRACTS.PrimeVault,
-      //   abi: PRIME_VAULT_ABI,
-      //   functionName: 'deposit',
-      //   args: [parseEther(depositAmount)],
-      // })
-
-      // Mock success
-      setTimeout(() => {
-        setVaultData(prev => ({
-          ...prev,
-          mETHBalance: prev.mETHBalance - parseFloat(depositAmount),
-          mETHDeposited: prev.mETHDeposited + parseFloat(depositAmount),
-          collateralValue: prev.collateralValue + (parseFloat(depositAmount) * 2500), // $2500 per mETH
-          availableCollateral: prev.availableCollateral + (parseFloat(depositAmount) * 2500)
-        }))
-        setDepositAmount('')
-        setIsDepositing(false)
-        toast({
-          title: "Deposit Successful",
-          description: `Successfully deposited ${depositAmount} mETH to vault`,
-          variant: "success",
-        })
-      }, 2000)
-
+      await stakeTokens(depositAmount)
+      setDepositAmount('')
+      toast({
+        title: "Deposit Successful",
+        description: `Successfully staked ${depositAmount} ${tokenSymbol}`,
+      })
     } catch (error) {
       console.error('Deposit failed:', error)
-      setIsDepositing(false)
       toast({
         title: "Deposit Failed",
-        description: "Failed to deposit mETH. Please try again.",
+        description: `Failed to stake ${tokenSymbol}. Please try again.`,
         variant: "destructive",
       })
     }
@@ -117,125 +67,108 @@ export default function VaultTab() {
   const handleWithdraw = async () => {
     if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) return
     
-    setIsWithdrawing(true)
+    // For simplified demo, we don't have unstake function yet
+    toast({
+      title: "Withdraw Not Available",
+      description: "Unstaking feature coming soon in full version",
+      variant: "destructive",
+    })
+  }
+
+  const handleClaimYield = async () => {
     try {
-      console.log('Withdrawing from vault...')
-      // await writeContract({
-      //   address: CONTRACTS.PrimeVault,
-      //   abi: PRIME_VAULT_ABI,
-      //   functionName: 'withdraw',
-      //   args: [parseEther(withdrawAmount)],
-      // })
-
-      // Mock success
-      setTimeout(() => {
-        setVaultData(prev => ({
-          ...prev,
-          mETHBalance: prev.mETHBalance + parseFloat(withdrawAmount),
-          mETHDeposited: prev.mETHDeposited - parseFloat(withdrawAmount),
-          collateralValue: prev.collateralValue - (parseFloat(withdrawAmount) * 2500),
-          availableCollateral: prev.availableCollateral - (parseFloat(withdrawAmount) * 2500)
-        }))
-        setWithdrawAmount('')
-        setIsWithdrawing(false)
-        toast({
-          title: "Withdrawal Successful",
-          description: `Successfully withdrew ${withdrawAmount} mETH from vault`,
-          variant: "success",
-        })
-      }, 2000)
-
-    } catch (error) {
-      console.error('Withdraw failed:', error)
-      setIsWithdrawing(false)
+      await claimStakingYield()
       toast({
-        title: "Withdrawal Failed",
-        description: "Failed to withdraw mETH. Please try again.",
+        title: "Yield Claimed",
+        description: `Successfully claimed ${pendingYield} ${tokenSymbol} yield`,
+      })
+    } catch (error) {
+      console.error('Claim failed:', error)
+      toast({
+        title: "Claim Failed",
+        description: "Failed to claim yield. Please try again.",
         variant: "destructive",
       })
     }
   }
 
-  const maxDeposit = vaultData.mETHBalance
-  const maxWithdraw = Math.min(
-    vaultData.mETHDeposited,
-    vaultData.availableCollateral / 2500 // Available collateral in mETH
-  )
+  const maxDeposit = parseFloat(tokenBalance)
+  const maxWithdraw = parseFloat(stakedAmount)
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center">
+          <h2 className="text-3xl font-bold text-black mb-2 flex items-center">
             <Wallet className="w-8 h-8 mr-3" />
-            mETH Vault
+            {tokenSymbol} Staking Vault
           </h2>
-          <p className="text-gray-300">
-            Deposit mETH as collateral and earn ~4% staking rewards
+          <p className="text-gray-600">
+            Stake {tokenSymbol} to earn staking rewards and use as collateral
           </p>
         </div>
         
-        <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
           <TrendingUp className="w-3 h-3 mr-1" />
-          {vaultData.stakingAPY}% APY
+          {stakingAPY} APY
         </Badge>
       </div>
 
       {/* Vault Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Wallet Balance</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Wallet Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatNumber(vaultData.mETHBalance, 3)} mETH
+            <div className="text-2xl font-bold text-black">
+              {formatNumber(maxDeposit, 3)} {tokenSymbol}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Available to deposit
+            <p className="text-xs text-gray-500 mt-1">
+              Available to stake
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Deposited</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Staked Amount</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatNumber(vaultData.mETHDeposited, 3)} mETH
+            <div className="text-2xl font-bold text-black">
+              {formatNumber(parseFloat(stakedAmount), 3)} {tokenSymbol}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               Earning staking rewards
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Collateral Value</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Pending Yield</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {formatCurrency(vaultData.collateralValue)}
+            <div className="text-2xl font-bold text-green-600">
+              {formatNumber(parseFloat(pendingYield), 6)} {tokenSymbol}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Total USD value
+            <p className="text-xs text-gray-500 mt-1">
+              Ready to claim
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-300">Health Factor</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Collateral Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-400">
-              {vaultData.healthFactor}x
+            <div className="text-2xl font-bold text-black">
+              {formatCurrency(userDepositValue)}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Liquidation at 1.2x
+            <p className="text-xs text-gray-500 mt-1">
+              Total USD value
             </p>
           </CardContent>
         </Card>
@@ -245,20 +178,20 @@ export default function VaultTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Deposit Section */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <ArrowDownLeft className="w-5 h-5 mr-2 text-green-400" />
-              Deposit mETH
+            <CardTitle className="text-black flex items-center">
+              <ArrowDownLeft className="w-5 h-5 mr-2 text-green-600" />
+              Stake {tokenSymbol}
             </CardTitle>
-            <CardDescription className="text-gray-300">
-              Deposit mETH to earn staking rewards and use as collateral
+            <CardDescription className="text-gray-600">
+              Stake {tokenSymbol} to earn {stakingAPY} rewards and use as collateral
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="deposit-amount" className="text-gray-300">
-                Amount to Deposit
+              <Label htmlFor="deposit-amount" className="text-gray-600">
+                Amount to Stake
               </Label>
               <div className="relative">
                 <Input
@@ -267,208 +200,97 @@ export default function VaultTab() {
                   placeholder="0.0"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
-                  className="bg-white/5 border-white/20 text-white pr-16"
+                  className="bg-white border-gray-300 text-black pr-16"
                 />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                  mETH
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                  {tokenSymbol}
                 </div>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">
-                  Balance: {formatNumber(vaultData.mETHBalance, 3)} mETH
+                <span className="text-gray-500">
+                  Balance: {formatNumber(maxDeposit, 3)} {tokenSymbol}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-blue-400 hover:text-blue-300 p-0 h-auto"
-                  onClick={() => setDepositAmount(maxDeposit.toString())}
+                  className="text-blue-600 hover:text-blue-300 p-0 h-auto"
+                  onClick={() => setDepositAmount((maxDeposit * 0.9).toString())} // Leave some for gas
                 >
                   Max
                 </Button>
               </div>
             </div>
 
-            {/* Deposit Preview */}
-            {depositAmount && parseFloat(depositAmount) > 0 && (
-              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Collateral Added:</span>
-                  <span className="text-white font-semibold">
-                    {formatCurrency(parseFloat(depositAmount) * 2500)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Annual Staking Yield:</span>
-                  <span className="text-green-400 font-semibold">
-                    ~{formatNumber(parseFloat(depositAmount) * vaultData.stakingAPY / 100, 3)} mETH/year
-                  </span>
-                </div>
-              </div>
-            )}
-
             <Button 
               onClick={handleDeposit}
-              disabled={!depositAmount || parseFloat(depositAmount) <= 0 || parseFloat(depositAmount) > maxDeposit || isDepositing}
+              disabled={!depositAmount || parseFloat(depositAmount) <= 0 || parseFloat(depositAmount) > maxDeposit || isStaking}
               className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
             >
-              {isDepositing ? 'Depositing...' : 'Deposit mETH'}
+              {isStaking ? 'Staking...' : `Stake ${tokenSymbol}`}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Withdraw Section */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+        {/* Claim Yield Section */}
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <ArrowUpRight className="w-5 h-5 mr-2 text-red-400" />
-              Withdraw mETH
+            <CardTitle className="text-black flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+              Claim Yield
             </CardTitle>
-            <CardDescription className="text-gray-300">
-              Withdraw mETH while maintaining collateral requirements
+            <CardDescription className="text-gray-600">
+              Claim your accumulated staking rewards
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="withdraw-amount" className="text-gray-300">
-                Amount to Withdraw
+              <Label className="text-gray-600">
+                Available Yield
               </Label>
-              <div className="relative">
-                <Input
-                  id="withdraw-amount"
-                  type="number"
-                  placeholder="0.0"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="bg-white/5 border-white/20 text-white pr-16"
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                  mETH
-                </div>
+              <div className="text-3xl font-bold text-green-600">
+                {formatNumber(parseFloat(pendingYield), 6)} {tokenSymbol}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">
-                  Max Withdrawable: {formatNumber(maxWithdraw, 3)} mETH
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-400 hover:text-blue-300 p-0 h-auto"
-                  onClick={() => setWithdrawAmount(maxWithdraw.toString())}
-                >
-                  Max
-                </Button>
-              </div>
+              <p className="text-sm text-gray-500">
+                ≈ {formatCurrency(parseFloat(pendingYield) * tokenPrice)}
+              </p>
             </div>
 
-            {/* Withdraw Warning */}
-            {withdrawAmount && parseFloat(withdrawAmount) > maxWithdraw && (
-              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <span className="text-red-300 text-sm">
-                    Withdrawal would violate collateral requirements
-                  </span>
-                </div>
-              </div>
-            )}
-
             <Button 
-              onClick={handleWithdraw}
-              disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > maxWithdraw || isWithdrawing}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              onClick={handleClaimYield}
+              disabled={parseFloat(pendingYield) <= 0 || isClaiming}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
-              {isWithdrawing ? 'Withdrawing...' : 'Withdraw mETH'}
+              {isClaiming ? 'Claiming...' : 'Claim Yield'}
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Collateral Status */}
-      <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+      {/* Total Protocol Stats */}
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white flex items-center">
-            <Shield className="w-5 h-5 mr-2" />
-            Collateral Status
-          </CardTitle>
-          <CardDescription className="text-gray-300">
-            Monitor your collateral health and borrowing capacity
-          </CardDescription>
+          <CardTitle className="text-black">Protocol Statistics</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Collateral Breakdown */}
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-300">Total Collateral</span>
-                <span className="text-white font-semibold">
-                  {formatCurrency(vaultData.collateralValue)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Credit Used</span>
-                <span className="text-white font-semibold">
-                  {formatCurrency(vaultData.creditUsed)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Available</span>
-                <span className="text-green-400 font-semibold">
-                  {formatCurrency(vaultData.availableCollateral)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Health Factor</span>
-                <span className={`font-semibold ${
-                  vaultData.healthFactor >= 1.5 ? 'text-green-400' : 
-                  vaultData.healthFactor >= 1.2 ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {vaultData.healthFactor}x
-                </span>
-              </div>
-              <Progress 
-                value={Math.min((vaultData.healthFactor / 2) * 100, 100)} 
-                className="h-2"
-              />
-              <p className="text-xs text-gray-500">
-                Liquidation occurs below 1.2x
+            <div>
+              <p className="text-sm text-gray-600">Total Staked</p>
+              <p className="text-2xl font-bold text-black">
+                {formatNumber(parseFloat(totalStaked), 2)} {tokenSymbol}
               </p>
             </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-300">Staking Rewards</span>
-                <span className="text-green-400 font-semibold">
-                  +{formatNumber(vaultData.totalEarned, 3)} mETH
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Current APY</span>
-                <span className="text-blue-400 font-semibold">
-                  {vaultData.stakingAPY}%
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">
-                Rewards compound automatically
+            <div>
+              <p className="text-sm text-gray-600">Your Share</p>
+              <p className="text-2xl font-bold text-black">
+                {parseFloat(totalStaked) > 0 
+                  ? ((parseFloat(stakedAmount) / parseFloat(totalStaked)) * 100).toFixed(2)
+                  : '0.00'
+                }%
               </p>
             </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-blue-200 font-medium text-sm">
-                  How mETH Vault Works
-                </p>
-                <p className="text-blue-300/80 text-sm">
-                  Your deposited mETH continues earning ~4% staking rewards while serving as collateral. 
-                  You can use up to 80% of your collateral value to issue USDY credit lines for RWA investments.
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600">APY</p>
+              <p className="text-2xl font-bold text-green-600">{stakingAPY}</p>
             </div>
           </div>
         </CardContent>
