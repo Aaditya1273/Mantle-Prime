@@ -1,0 +1,25 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_MANTLE_RPC_URL": "@mantle_rpc_url",
+    "NEXT_PUBLIC_MANTLE_FAUCET_URL": "@mantle_faucet_url",
+    "NEXT_PUBLIC_MANTLE_NETWORK": "@mantle_network",
+    "NEXT_PUBLIC_COMPLIANCE_MODULE_ADDRESS": "@compliance_module_address",
+    "NEXT_PUBLIC_PRIME_VAULT_ADDRESS": "@prime_vault_address",
+    "NEXT_PUBLIC_CREDIT_ISSUER_ADDRESS": "@credit_issuer_address",
+    "NEXT_PUBLIC_RWA_MARKETPLACE_ADDRESS": "@rwa_marketplace_address",
+    "NEXT_PUBLIC_MANTLE_STAKING_VAULT_ADDRESS": "@mantle_staking_vault_address",
+    "NEXT_PUBLIC_MOCK_USDY_ADDRESS": "@mock_usdy_address",
+    "NEXT_PUBLIC_SIMPLIFIED_COMPLIANCE_MODULE_ADDRESS": "@simplified_compliance_module_address",
+    "NEXT_PUBLIC_SIMPLIFIED_RWA_MARKETPLACE_ADDRESS": "@simplified_rwa_marketplace_address",
+    "NEXT_PUBLIC_METH_ADDRESS": "@meth_address",
+    "NEXT_PUBLIC_USDY_ADDRESS": "@usdy_address",
+    "NEXT_PUBLIC_APP_MODE": "@app_mode",
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "@walletconnect_project_id",
+    "NEXT_PUBLIC_CHAIN_ID": "@chain_id",
+    "NEXT_PUBLIC_DEMO_MODE": "@demo_mode"
+  }
+}
