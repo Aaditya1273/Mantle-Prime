@@ -13,8 +13,7 @@ import {
   TrendingUp, 
   DollarSign,
   ShoppingCart,
-  Eye,
-  X
+  Eye
 } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
 import { useRWAMarketplace, useCreditToken } from '@/hooks/useContractsUnified'
@@ -41,7 +40,6 @@ export default function MarketplaceTabV3() {
   const { address } = useAccount()
   const { toast } = useToast()
   const [filter, setFilter] = useState('all')
-  const [selectedAsset, setSelectedAsset] = useState<RWAAsset | null>(null)
   const [purchaseShares, setPurchaseShares] = useState(1)
   
   // Transaction modal state
@@ -58,7 +56,7 @@ export default function MarketplaceTabV3() {
   let creditTokenResult: any = null
   let marketplaceResult: any = null
   let creditBalance = '0'
-  let buyShares: (assetId: number, shares: number) => Promise<string> = async (assetId: number, shares: number) => {
+  let buyShares: (assetId: number, shares: number) => Promise<string> = async (_assetId: number, _shares: number) => {
     throw new Error('Contract not connected. Please check your wallet connection.')
   }
   let isPurchasing = false
@@ -447,7 +445,6 @@ export default function MarketplaceTabV3() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => setSelectedAsset(asset)}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Details
