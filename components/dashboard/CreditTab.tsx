@@ -11,27 +11,40 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TransactionModal } from '@/components/ui/transaction-modal'
 import { 
   CreditCard, 
   Plus, 
   Minus, 
   AlertTriangle,
   Info,
-  Percent
+  Percent,
+  Gift
 } from 'lucide-react'
 import { formatNumber, formatCurrency } from '@/lib/utils'
-import { showTransactionSuccess, showTransactionError } from '@/lib/transaction-utils'
 
 export default function CreditTab() {
   const { address } = useAccount()
   const { toast } = useToast()
   const [creditAmount, setCreditAmount] = useState('')
   const [repayAmount, setRepayAmount] = useState('')
+  
+  // Transaction modal state
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    success: false,
+    title: '',
+    message: '',
+    txHash: '',
+    explorerUrl: ''
+  })
 
   // Unified contract data
   const { stakedAmount, tokenSymbol } = useStaking(address)
   const {
     balance: creditBalance,
+    pendingYield,
+    yieldInfo,
     getTokensFromFaucet,
     claimTokenYield,
     isFauceting,
@@ -57,36 +70,45 @@ export default function CreditTab() {
   const handleIssueCredit = async () => {
     // Validation checks with user-friendly messages
     if (!hasFaucet) {
-      toast({
-        title: "❌ Faucet Not Available",
-        description: "The USDY faucet is not available in this mode. Please check your network connection.",
-        variant: "destructive",
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Faucet Not Available',
+        message: 'The USDY faucet is not available in this mode. Please check your network connection.',
+        txHash: '',
+        explorerUrl: ''
       })
       return
     }
 
     if (!creditAmount || parseFloat(creditAmount) <= 0) {
-      toast({
-        title: "⚠️ Invalid Amount",
-        description: "Please enter a valid credit amount greater than 0.",
-        variant: "destructive",
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Invalid Amount',
+        message: 'Please enter a valid credit amount greater than 0.',
+        txHash: '',
+        explorerUrl: ''
       })
       return
     }
 
     if (creditBalanceValue >= 10000) {
-      toast({
-        title: "🚫 Maximum Balance Reached",
-        description: `You already have ${formatNumber(creditBalanceValue, 0)} USDY tokens. The faucet limit is 10,000 USDY per wallet.`,
-        variant: "destructive",
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Maximum Balance Reached',
+        message: `You already have ${formatNumber(creditBalanceValue, 0)} USDY tokens. The faucet limit is 10,000 USDY per wallet.`,
+        txHash: '',
+        explorerUrl: ''
       })
       return
     }
     
     try {
-      console.log('Attempting to get USDY from faucet...')
-      console.log('Current USDY balance:', creditBalance)
-      console.log('Credit symbol:', creditSymbol)
+      console.log('🔍 Debug: Attempting to get USDY from faucet...')
+      console.log('🔍 Debug: Current USDY balance:', creditBalance)
+      console.log('🔍 Debug: Credit symbol:', creditSymbol)
       
       // Show loading state
       toast({
@@ -96,41 +118,33 @@ export default function CreditTab() {
       })
       
       const txHash = await getTokensFromFaucet()
+      console.log('🔍 Debug: Transaction hash received:', txHash)
       
-      // Only show success if we get a valid transaction hash
-      if (txHash && txHash !== '0x' && txHash.length === 66) {
-        setCreditAmount('')
-        
-        // Create clickable explorer link
-        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
-        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
-        
-        toast({
-          title: "✅ USDY Tokens Received",
-          description: `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`,
-          duration: 8000,
-        })
-
-        // Show explorer link in console and separate notification
-        console.log(`✅ USDY Faucet Successful`)
-        console.log(`Transaction Hash: ${txHash}`)
-        console.log(`Explorer Link: ${explorerUrl}`)
-        console.log(`Click to view: ${explorerUrl}`)
-        
-        // Show a follow-up toast with explorer link
-        setTimeout(() => {
-          toast({
-            title: "🔗 Transaction Details",
-            description: `Hash: ${shortHash} - Check console for explorer link`,
-            duration: 10000,
-          })
-        }, 2000)
-        
-      } else {
-        throw new Error('Invalid or empty transaction hash received')
+      // Check if we got a transaction hash
+      if (!txHash || !txHash.startsWith('0x') || txHash.length !== 66) {
+        throw new Error(`Invalid transaction hash received: ${txHash}`)
       }
+      
+      // Transaction submitted successfully
+      setCreditAmount('')
+      
+      const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+      
+      setModalState({
+        isOpen: true,
+        success: true,
+        title: 'Transaction Submitted!',
+        message: `Transaction submitted to get ${creditSymbol} tokens from faucet. Please check the explorer to confirm success.`,
+        txHash: txHash,
+        explorerUrl: explorerUrl
+      })
+
+      console.log(`✅ Faucet Transaction Submitted`)
+      console.log(`Transaction Hash: ${txHash}`)
+      console.log(`Explorer Link: ${explorerUrl}`)
+      console.log(`⚠️  Check explorer to confirm transaction success`)
     } catch (error: any) {
-      console.error('Faucet failed:', error)
+      console.error('🔍 Debug: Faucet failed:', error)
       
       let errorMessage = "Failed to get USDY tokens from faucet."
       
@@ -141,98 +155,111 @@ export default function CreditTab() {
         errorMessage = "Transaction was rejected by the blockchain. You may have reached the faucet limit."
       } else if (error?.message?.includes("insufficient funds")) {
         errorMessage = "Insufficient MNT tokens for gas fees. Please add MNT to your wallet."
-      } else if (error?.message?.includes("user rejected")) {
+      } else if (error?.message?.includes("user rejected") || error?.message?.includes("User rejected")) {
         errorMessage = "Transaction was cancelled in your wallet."
       } else if (error?.message?.includes("network")) {
         errorMessage = "Network connection issue. Please check your connection and try again."
       } else if (error?.shortMessage) {
         errorMessage = `Faucet failed: ${error.shortMessage}`
+      } else if (error?.message) {
+        errorMessage = error.message
       }
       
-      toast({
-        title: "❌ Faucet Transaction Failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 8000,
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Faucet Transaction Failed',
+        message: errorMessage,
+        txHash: '',
+        explorerUrl: ''
       })
     }
   }
 
   const handleRepayCredit = async () => {
-    if (!repayAmount || parseFloat(repayAmount) <= 0) {
-      toast({
-        title: "⚠️ Invalid Amount",
-        description: "Please enter a valid amount to claim yield.",
-        variant: "destructive",
+    const pendingYieldAmount = parseFloat(pendingYield || '0')
+    
+    if (pendingYieldAmount <= 0) {
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'No Yield Available',
+        message: `You have ${pendingYieldAmount.toFixed(6)} USDY yield available. Yield accrues over time at 4.5% APY. Wait some time after getting tokens for yield to accumulate.`,
+        txHash: '',
+        explorerUrl: ''
       })
       return
     }
     
     try {
+      console.log('🔍 Debug: Attempting to claim yield...')
+      
       // Show loading state
       toast({
         title: "🔄 Processing Yield Claim",
-        description: "Claiming USDY yield rewards. Please confirm in your wallet...",
+        description: `Claiming ${pendingYieldAmount.toFixed(4)} USDY yield rewards. Please confirm in your wallet...`,
         duration: 3000,
       })
       
       const txHash = await claimTokenYield()
+      console.log('🔍 Debug: Transaction hash received:', txHash)
       
-      // Only show success if we get a valid transaction hash
-      if (txHash && txHash !== '0x' && txHash.length === 66) {
-        setRepayAmount('')
-        
-        // Create clickable explorer link
-        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
-        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
-        
-        toast({
-          title: "✅ Yield Claimed Successfully",
-          description: `Successfully claimed ${creditSymbol} yield rewards. Your USDY balance has been updated!`,
-          duration: 8000,
-        })
-
-        // Show explorer link in console
-        console.log(`✅ Yield Claim Successful`)
-        console.log(`Transaction Hash: ${txHash}`)
-        console.log(`Explorer Link: ${explorerUrl}`)
-        console.log(`Click to view: ${explorerUrl}`)
-        
-        // Show a follow-up toast with explorer link
-        setTimeout(() => {
-          toast({
-            title: "🔗 Transaction Details",
-            description: `Hash: ${shortHash} - Check console for explorer link`,
-            duration: 10000,
-          })
-        }, 2000)
-        
-      } else {
-        throw new Error('Invalid or empty transaction hash received')
+      // Check if we got a transaction hash
+      if (!txHash || !txHash.startsWith('0x') || txHash.length !== 66) {
+        throw new Error(`Invalid transaction hash received: ${txHash}`)
       }
+      
+      // Wait for transaction receipt to check if it actually succeeded
+      console.log('🔍 Debug: Waiting for transaction receipt...')
+      
+      // For now, we'll assume the transaction succeeded if we get a valid hash
+      // In a production app, you'd want to wait for the receipt and check status
+      setRepayAmount('')
+      
+      const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+      
+      setModalState({
+        isOpen: true,
+        success: true,
+        title: 'Transaction Submitted!',
+        message: `Transaction submitted for yield claim. Please check the explorer to confirm success. If it fails, you may not have any yield to claim.`,
+        txHash: txHash,
+        explorerUrl: explorerUrl
+      })
+
+      console.log(`✅ Transaction Submitted`)
+      console.log(`Transaction Hash: ${txHash}`)
+      console.log(`Explorer Link: ${explorerUrl}`)
+      console.log(`⚠️  Check explorer to confirm transaction success`)
     } catch (error: any) {
-      console.error('Yield claim failed:', error)
+      console.error('🔍 Debug: Yield claim failed:', error)
       
       let errorMessage = "Failed to claim yield rewards."
       
       // Parse specific error messages
-      if (error?.message?.includes("execution reverted")) {
+      if (error?.message?.includes("No yield to claim")) {
+        errorMessage = "No yield available to claim. Yield accrues over time at 4.5% APY. Wait some time after getting tokens before claiming."
+      } else if (error?.message?.includes("execution reverted")) {
         errorMessage = "Transaction was rejected by the blockchain. You may not have any yield to claim."
       } else if (error?.message?.includes("insufficient funds")) {
         errorMessage = "Insufficient MNT tokens for gas fees. Please add MNT to your wallet."
-      } else if (error?.message?.includes("user rejected")) {
+      } else if (error?.message?.includes("user rejected") || error?.message?.includes("User rejected")) {
         errorMessage = "Transaction was cancelled in your wallet."
       } else if (error?.message?.includes("network")) {
         errorMessage = "Network connection issue. Please check your connection and try again."
       } else if (error?.shortMessage) {
         errorMessage = `Yield claim failed: ${error.shortMessage}`
+      } else if (error?.message) {
+        errorMessage = error.message
       }
       
-      toast({
-        title: "❌ Yield Claim Failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 8000,
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Yield Claim Failed',
+        message: errorMessage,
+        txHash: '',
+        explorerUrl: ''
       })
     }
   }
@@ -358,7 +385,7 @@ export default function CreditTab() {
             Issue Credit
           </TabsTrigger>
           <TabsTrigger value="repay" className="data-[state=active]:bg-white">
-            Repay Credit
+            Claim Yield
           </TabsTrigger>
         </TabsList>
 
@@ -383,13 +410,19 @@ export default function CreditTab() {
                     <Input
                       id="credit-amount"
                       type="number"
-                      placeholder="0.00"
+                      placeholder="Enter amount"
                       value={creditAmount}
                       onChange={(e) => {
                         const value = e.target.value
-                        // Only allow positive numbers
-                        if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                        // Allow empty string or valid positive numbers
+                        if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) > 0)) {
                           setCreditAmount(value)
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Don't auto-set to 0, let user enter their amount
+                        if (e.target.value === '0') {
+                          setCreditAmount('')
                         }
                       }}
                       className="bg-white border-gray-300 text-black pr-16"
@@ -520,27 +553,26 @@ export default function CreditTab() {
           <Card className="bg-white border-gray-200">
             <CardHeader>
               <CardTitle className="text-black flex items-center">
-                <Minus className="w-5 h-5 mr-2 text-red-600" />
-                Repay Credit Line
+                <Gift className="w-5 h-5 mr-2 text-green-600" />
+                Claim USDY Yield
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Repay your USDY debt to free up collateral
+                Claim your accumulated USDY yield rewards (4.5% APY)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="repay-amount" className="text-gray-600">
-                    Repayment Amount (USDY)
+                    Claimable Yield Amount
                   </Label>
                   <div className="relative">
                     <Input
                       id="repay-amount"
-                      type="number"
-                      placeholder="0.00"
-                      value={repayAmount}
-                      onChange={(e) => setRepayAmount(e.target.value)}
-                      className="bg-white border-gray-300 text-black pr-16"
+                      type="text"
+                      value={`${formatCurrency(parseFloat(pendingYield || '0'))}`}
+                      readOnly
+                      className="bg-gray-50 border-gray-300 text-black pr-16 cursor-not-allowed"
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
                       USDY
@@ -550,14 +582,9 @@ export default function CreditTab() {
                     <span className="text-gray-500">
                       Balance: {formatCurrency(creditBalanceValue)} {creditSymbol}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 p-0 h-auto"
-                      onClick={() => setRepayAmount(Math.min(creditBalanceValue, totalDebt).toString())}
-                    >
-                      Max
-                    </Button>
+                    <span className="text-green-600 font-semibold">
+                      {parseFloat(pendingYield || '0') > 0 ? 'Yield Available' : 'No Yield Yet'}
+                    </span>
                   </div>
                 </div>
 
@@ -582,11 +609,26 @@ export default function CreditTab() {
 
                 <Button 
                   onClick={handleRepayCredit}
-                  disabled={!repayAmount || parseFloat(repayAmount) <= 0 || parseFloat(repayAmount) > creditBalanceValue || isClaiming}
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                  disabled={parseFloat(pendingYield || '0') <= 0 || isClaiming}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                 >
-                  {isClaiming ? 'Claiming Yield...' : 'Claim Yield'}
+                  {isClaiming ? 'Claiming Yield...' : 
+                   parseFloat(pendingYield || '0') <= 0 ? `No Yield Available (${formatCurrency(parseFloat(pendingYield || '0'))})` :
+                   `Claim ${formatCurrency(parseFloat(pendingYield || '0'))} USDY Yield`}
                 </Button>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                  <div className="flex items-center">
+                    <Info className="h-4 w-4 text-blue-600 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Real Yield Information</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Yield accrues at 4.5% APY. Current claimable: {formatCurrency(parseFloat(pendingYield || '0'))} USDY. 
+                        {parseFloat(pendingYield || '0') <= 0 && ' Wait some time after getting tokens for yield to accumulate.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -683,6 +725,17 @@ export default function CreditTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Transaction Result Modal */}
+      <TransactionModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        success={modalState.success}
+        title={modalState.title}
+        message={modalState.message}
+        txHash={modalState.txHash}
+        explorerUrl={modalState.explorerUrl}
+      />
     </div>
   )
 }

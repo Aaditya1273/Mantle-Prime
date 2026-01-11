@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { TransactionModal } from '@/components/ui/transaction-modal'
 import { 
   Building, 
   MapPin, 
@@ -42,11 +43,24 @@ export default function MarketplaceTabV3() {
   const [filter, setFilter] = useState('all')
   const [selectedAsset, setSelectedAsset] = useState<RWAAsset | null>(null)
   const [purchaseShares, setPurchaseShares] = useState(1)
+  
+  // Transaction modal state
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    success: false,
+    title: '',
+    message: '',
+    txHash: '',
+    explorerUrl: ''
+  })
 
   // Real contract data with safe fallbacks
-  let creditTokenResult, marketplaceResult
+  let creditTokenResult: any = null
+  let marketplaceResult: any = null
   let creditBalance = '0'
-  let buyShares = async (assetId: number, shares: number) => '0x123'
+  let buyShares: (assetId: number, shares: number) => Promise<string> = async (assetId: number, shares: number) => {
+    throw new Error('Contract not connected. Please check your wallet connection.')
+  }
   let isPurchasing = false
 
   try {
@@ -54,7 +68,7 @@ export default function MarketplaceTabV3() {
     creditBalance = creditTokenResult?.balance || '0'
     
     marketplaceResult = useRWAMarketplace(address)
-    buyShares = marketplaceResult?.buyShares || (async (assetId: number, shares: number) => '0x123')
+    buyShares = marketplaceResult?.buyShares || buyShares // Keep the error-throwing fallback
     isPurchasing = marketplaceResult?.isPurchasing || false
   } catch (error) {
     console.warn('Hook error caught:', error)
@@ -201,10 +215,13 @@ export default function MarketplaceTabV3() {
   const handlePurchase = async (asset: RWAAsset, shares: number) => {
     // Validate input - prevent 0 or negative shares
     if (!shares || shares <= 0 || isNaN(shares)) {
-      toast({
-        title: "❌ Invalid Input",
-        description: "Please enter a valid number of shares (greater than 0).",
-        variant: "destructive",
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Invalid Input',
+        message: 'Please enter a valid number of shares (greater than 0).',
+        txHash: '',
+        explorerUrl: ''
       })
       return
     }
@@ -218,10 +235,13 @@ export default function MarketplaceTabV3() {
       
       // Check balance
       if (userBalanceNum < requiredAmount) {
-        toast({
-          title: "❌ Insufficient USDY Balance",
-          description: `You need ${requiredAmount} USDY but only have ${formatNumber(userBalanceNum, 0)} USDY. Get more USDY from the Credit tab first.`,
-          variant: "destructive",
+        setModalState({
+          isOpen: true,
+          success: false,
+          title: 'Insufficient USDY Balance',
+          message: `You need ${requiredAmount} USDY but only have ${formatNumber(userBalanceNum, 0)} USDY. Get more USDY from the Credit tab first.`,
+          txHash: '',
+          explorerUrl: ''
         })
         return
       }
@@ -252,7 +272,7 @@ export default function MarketplaceTabV3() {
 
       // Show purchase step
       toast({
-        title: "🔄 Processing RWA Purchase",
+        title: "� Pr ocessing RWA Purchase",
         description: `Step 2/2: Purchasing ${shares} shares of ${asset.name}. Please confirm in your wallet...`,
         duration: 5000,
       })
@@ -262,28 +282,35 @@ export default function MarketplaceTabV3() {
       const txHash = await buyShares(asset.id, shares)
       console.log(`🔍 Debug: Transaction hash:`, txHash)
       
-      // Validate transaction hash properly
-      if (txHash && txHash !== '0x123' && txHash.startsWith('0x') && txHash.length === 66) {
-        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
-        
-        toast({
-          title: "✅ RWA Purchase Successful",
-          description: `Successfully purchased ${shares} shares of ${asset.name} for ${requiredAmount} USDY. You're now earning ${asset.expectedYield}% APY! View on explorer: ${explorerUrl}`,
-          duration: 10000,
-        })
-
-        console.log(`✅ RWA Purchase Successful - ${requiredAmount} USDY spent`)
-        console.log(`🎯 Portfolio Updated: +${shares} shares of ${asset.name}`)
-        console.log(`Explorer Link: ${explorerUrl}`)
-        
-        // Refresh the page to show updated available shares
-        setTimeout(() => {
-          window.location.reload()
-        }, 2000)
-      } else {
-        // Transaction failed - show proper error
-        throw new Error(`Transaction failed or returned invalid hash: ${txHash}`)
+      // Strict transaction validation - reject any invalid hashes
+      if (!txHash || typeof txHash !== 'string') {
+        throw new Error(`Invalid transaction hash received: ${txHash}. Transaction likely failed.`)
       }
+      
+      if (txHash === '0x123' || txHash === '0x' || !txHash.startsWith('0x') || txHash.length !== 66) {
+        throw new Error(`Invalid transaction hash format: ${txHash}. Transaction likely failed.`)
+      }
+      
+      // Valid transaction hash received
+      const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+      
+      setModalState({
+        isOpen: true,
+        success: true,
+        title: 'RWA Purchase Successful!',
+        message: `Successfully purchased ${shares} shares of ${asset.name} for ${requiredAmount} USDY. You're now earning ${asset.expectedYield}% APY!`,
+        txHash: txHash,
+        explorerUrl: explorerUrl
+      })
+
+      console.log(`✅ RWA Purchase Successful - ${requiredAmount} USDY spent`)
+      console.log(`🎯 Portfolio Updated: +${shares} shares of ${asset.name}`)
+      console.log(`Explorer Link: ${explorerUrl}`)
+      
+      // Refresh the page to show updated available shares
+      setTimeout(() => {
+        window.location.reload()
+      }, 3000)
       
     } catch (error: any) {
       console.error('Purchase failed:', error)
@@ -305,11 +332,13 @@ export default function MarketplaceTabV3() {
         errorMessage = error.message
       }
       
-      toast({
-        title: "❌ RWA Purchase Failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 8000,
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'RWA Purchase Failed',
+        message: errorMessage,
+        txHash: '',
+        explorerUrl: ''
       })
     }
   }
@@ -523,8 +552,19 @@ export default function MarketplaceTabV3() {
                                 min="1"
                                 max={asset.availableShares}
                                 value={purchaseShares}
-                                onChange={(e) => setPurchaseShares(Math.max(1, parseInt(e.target.value) || 1))}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value)
+                                  if (!isNaN(value) && value > 0) {
+                                    setPurchaseShares(value)
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (!e.target.value || parseInt(e.target.value) < 1) {
+                                    setPurchaseShares(1)
+                                  }
+                                }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="1"
                               />
                             </div>
                             <div className="text-sm text-gray-600">
@@ -559,6 +599,17 @@ export default function MarketplaceTabV3() {
           </Card>
         ))}
       </div>
+
+      {/* Transaction Result Modal */}
+      <TransactionModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        success={modalState.success}
+        title={modalState.title}
+        message={modalState.message}
+        txHash={modalState.txHash}
+        explorerUrl={modalState.explorerUrl}
+      />
     </div>
   )
 }

@@ -7,20 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TransactionModal } from '@/components/ui/transaction-modal'
 import { 
   TrendingUp, 
   Wallet, 
   Building, 
-  DollarSign,
   Percent,
-  Calendar,
   ArrowUpRight,
   Gift,
   PieChart
 } from 'lucide-react'
 import { useStaking, useCreditToken, useRWAMarketplace } from '@/hooks/useContractsUnified'
 import { formatNumber, formatCurrency } from '@/lib/utils'
-import { showTransactionSuccess, showTransactionError } from '@/lib/transaction-utils'
 
 interface RWAHolding {
   id: number
@@ -41,10 +39,20 @@ interface RWAHolding {
 export default function PortfolioTab() {
   const { address } = useAccount()
   
+  // Transaction modal state
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    success: false,
+    title: '',
+    message: '',
+    txHash: '',
+    explorerUrl: ''
+  })
+  
   // Real contract data
-  const { stakedAmount, tokenSymbol, stakingAPY } = useStaking(address)
-  const { balance: creditBalance, tokenSymbol: creditSymbol } = useCreditToken(address)
-  const { claimAssetYield, isClaiming } = useRWAMarketplace(address)
+  const { stakedAmount, tokenSymbol, stakingAPY, pendingYield: stakingPendingYield, claimStakingYield, isClaiming: isClaimingStaking } = useStaking(address)
+  const { balance: creditBalance, tokenSymbol: creditSymbol, pendingYield: creditPendingYield, claimTokenYield, isClaiming: isClaimingCredit } = useCreditToken(address)
+  const marketplaceResult = useRWAMarketplace(address)
 
   // Calculate real portfolio values
   const tokenPrice = tokenSymbol === 'MNT' ? 0.85 : 2500 // MNT ~$0.85, mETH ~$2500
@@ -52,12 +60,17 @@ export default function PortfolioTab() {
   const creditBalanceValue = parseFloat(creditBalance)
   const rwaInvestmentValue = creditBalanceValue * 0.6 // Assume 60% of credit used for RWA
   
-  // Calculate yields
+  // Calculate yields - use real pending yield data
   const stakingAPYNum = parseFloat(stakingAPY?.replace('%', '') || '4.2')
   const rwaAPY = 8.3
   const stakingMonthlyYield = stakedValue * (stakingAPYNum / 100) / 12
   const rwaMonthlyYield = rwaInvestmentValue * (rwaAPY / 100) / 12
   const totalMonthlyYield = stakingMonthlyYield + rwaMonthlyYield
+  
+  // Real claimable amounts
+  const realStakingClaimable = parseFloat(stakingPendingYield || '0')
+  const realCreditClaimable = parseFloat(creditPendingYield || '0')
+  const totalRealClaimable = realStakingClaimable + realCreditClaimable
   
   // Mock RWA holdings based on real investment value
   const [rwaHoldings] = useState<RWAHolding[]>([
@@ -72,7 +85,8 @@ export default function PortfolioTab() {
       purchaseValue: rwaInvestmentValue * 0.4 * 0.95, // 5% appreciation
       expectedYield: 8.0,
       yieldEarned: (rwaInvestmentValue * 0.4) * 0.08 * 0.25, // 3 months yield
-      claimableYield: (rwaInvestmentValue * 0.4) * 0.08 / 12, // 1 month claimable
+      // Calculate real claimable yield for each asset based on time
+      claimableYield: Math.max(0.001, (rwaInvestmentValue * 0.4) * 0.08 / 12), // At least some yield for demo
       purchaseDate: "2024-01-15",
       lastYieldClaim: "2024-02-15"
     },
@@ -87,7 +101,7 @@ export default function PortfolioTab() {
       purchaseValue: rwaInvestmentValue * 0.35,
       expectedYield: 6.5,
       yieldEarned: (rwaInvestmentValue * 0.35) * 0.065 * 0.25,
-      claimableYield: (rwaInvestmentValue * 0.35) * 0.065 / 12,
+      claimableYield: Math.max(0.001, (rwaInvestmentValue * 0.35) * 0.065 / 12),
       purchaseDate: "2024-01-10",
       lastYieldClaim: "2024-02-10"
     },
@@ -102,7 +116,7 @@ export default function PortfolioTab() {
       purchaseValue: rwaInvestmentValue * 0.25 * 0.97, // 3% appreciation
       expectedYield: 9.2,
       yieldEarned: (rwaInvestmentValue * 0.25) * 0.092 * 0.25,
-      claimableYield: (rwaInvestmentValue * 0.25) * 0.092 / 12,
+      claimableYield: Math.max(0.001, (rwaInvestmentValue * 0.25) * 0.092 / 12),
       purchaseDate: "2024-01-08",
       lastYieldClaim: "2024-02-08"
     }
@@ -119,45 +133,90 @@ export default function PortfolioTab() {
 
   const handleClaimYield = async (assetId: number) => {
     try {
-      const txHash = await claimAssetYield(assetId)
       const asset = rwaHoldings.find(h => h.id === assetId)
       
-      showTransactionSuccess(
-        txHash,
-        "RWA Yield Claimed",
-        `Successfully claimed yield from ${asset?.name || 'RWA asset'}. Your earnings have been added to your balance!`
-      )
+      if (!asset || asset.claimableYield <= 0) {
+        setModalState({
+          isOpen: true,
+          success: false,
+          title: 'No Yield Available',
+          message: `No claimable yield available for ${asset?.name || 'this asset'}.`,
+          txHash: '',
+          explorerUrl: ''
+        })
+        return
+      }
+
+      // For RWA assets, we don't have individual yield claiming in the simplified contract
+      // Show info that this would be available in full version
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'RWA Yield Claiming',
+        message: `Individual RWA asset yield claiming for ${asset.name} is not available in the simplified demo. Use the Credit tab to claim USDY yield or Vault tab for staking yield.`,
+        txHash: '',
+        explorerUrl: ''
+      })
     } catch (error) {
       console.error('Yield claim failed:', error)
-      showTransactionError(
-        "Yield Claim Failed",
-        "Failed to claim RWA yield. Please try again.",
-        error
-      )
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Yield Claim Failed',
+        message: 'Failed to claim RWA yield. Please try again.',
+        txHash: '',
+        explorerUrl: ''
+      })
     }
   }
 
   const handleClaimAllYield = async () => {
     try {
-      // Claim yield from all assets
-      for (const holding of rwaHoldings) {
-        if (holding.claimableYield > 0) {
-          const txHash = await claimAssetYield(holding.id)
-          
-          showTransactionSuccess(
-            txHash,
-            "All Yields Claimed",
-            `Successfully claimed yield from all RWA investments. Total earnings added to your balance!`
-          )
-        }
+      // Claim both staking and credit yield if available
+      let stakingTxHash = ''
+      let creditTxHash = ''
+      
+      if (realStakingClaimable > 0) {
+        stakingTxHash = await claimStakingYield()
       }
+      
+      if (realCreditClaimable > 0) {
+        creditTxHash = await claimTokenYield()
+      }
+      
+      if (!stakingTxHash && !creditTxHash) {
+        setModalState({
+          isOpen: true,
+          success: false,
+          title: 'No Yield Available',
+          message: `No claimable yield available. Staking yield: ${formatCurrency(realStakingClaimable)}, Credit yield: ${formatCurrency(realCreditClaimable)}`,
+          txHash: '',
+          explorerUrl: ''
+        })
+        return
+      }
+      
+      const primaryTxHash = stakingTxHash || creditTxHash
+      const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${primaryTxHash}`
+      
+      setModalState({
+        isOpen: true,
+        success: true,
+        title: 'Yield Claim Submitted!',
+        message: `Yield claim transaction submitted. ${stakingTxHash ? 'Staking yield claimed. ' : ''}${creditTxHash ? 'Credit yield claimed.' : ''}`,
+        txHash: primaryTxHash,
+        explorerUrl: explorerUrl
+      })
     } catch (error) {
       console.error('Claim all failed:', error)
-      showTransactionError(
-        "Claim All Failed",
-        "Failed to claim all yields. Please try again.",
-        error
-      )
+      setModalState({
+        isOpen: true,
+        success: false,
+        title: 'Yield Claim Failed',
+        message: 'Failed to claim yields. Please try again.',
+        txHash: '',
+        explorerUrl: ''
+      })
     }
   }
 
@@ -177,7 +236,7 @@ export default function PortfolioTab() {
         
         <Badge className="bg-green-100 text-green-800 border-green-200">
           <TrendingUp className="w-3 h-3 mr-1" />
-          {formatCurrency(totalClaimableYield)} Claimable
+          {formatCurrency(totalRealClaimable)} Real Yield
         </Badge>
       </div>
 
@@ -259,32 +318,32 @@ export default function PortfolioTab() {
 
         <TabsContent value="holdings" className="space-y-6">
           {/* Claimable Yield Summary */}
-          {totalClaimableYield > 0 && (
+          {totalRealClaimable > 0 && (
             <Card className="bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/20">
               <CardHeader>
                 <CardTitle className="text-black flex items-center font-heading">
                   <Gift className="w-5 h-5 mr-2 text-green-600" />
-                  Claimable Yield Available
+                  Real Claimable Yield Available
                 </CardTitle>
                 <CardDescription className="text-gray-600 font-body">
-                  You have unclaimed yield ready to be collected
+                  You have real yield ready to be collected from your positions
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex justify-between items-center">
                 <div>
                   <div className="text-2xl font-bold text-green-600 font-heading">
-                    {formatCurrency(totalClaimableYield)}
+                    {formatCurrency(totalRealClaimable)}
                   </div>
                   <p className="text-sm text-gray-600 font-body">
-                    From {rwaHoldings.filter(h => h.claimableYield > 0).length} assets
+                    Staking: {formatCurrency(realStakingClaimable)} | Credit: {formatCurrency(realCreditClaimable)}
                   </p>
                 </div>
                 <Button
                   onClick={handleClaimAllYield}
-                  disabled={isClaiming}
+                  disabled={totalRealClaimable <= 0 || isClaimingStaking || isClaimingCredit}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {isClaiming ? 'Claiming...' : 'Claim All Yield'}
+                  {(isClaimingStaking || isClaimingCredit) ? 'Claiming...' : 'Claim All Real Yield'}
                 </Button>
               </CardContent>
             </Card>
@@ -352,10 +411,10 @@ export default function PortfolioTab() {
                       <Button
                         size="sm"
                         onClick={() => handleClaimYield(holding.id)}
-                        disabled={holding.claimableYield <= 0 || isClaiming}
+                        disabled={holding.claimableYield <= 0}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {isClaiming ? 'Claiming...' : `Claim ${formatCurrency(holding.claimableYield)}`}
+                        Claim ${formatCurrency(holding.claimableYield)} (RWA)
                       </Button>
                     </div>
                   </CardContent>
@@ -502,6 +561,17 @@ export default function PortfolioTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Transaction Result Modal */}
+      <TransactionModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        success={modalState.success}
+        title={modalState.title}
+        message={modalState.message}
+        txHash={modalState.txHash}
+        explorerUrl={modalState.explorerUrl}
+      />
     </div>
   )
 }

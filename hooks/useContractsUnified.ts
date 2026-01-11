@@ -83,6 +83,24 @@ const MOCK_USDY_ABI = [
     "outputs": [{"type": "bool"}],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [{"type": "address", "name": "user"}],
+    "name": "pendingYield",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"type": "address", "name": "user"}],
+    "name": "getYieldInfo",
+    "outputs": [
+      {"type": "uint256", "name": "balance"},
+      {"type": "uint256", "name": "pendingYieldAmount"},
+      {"type": "uint256", "name": "lastUpdate"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const
 
@@ -219,6 +237,22 @@ export function useCreditToken(userAddress?: Address) {
       query: { enabled: !!userAddress }
     })
 
+    const { data: pendingYieldData } = useReadContract({
+      address: mockUSDYAddress,
+      abi: MOCK_USDY_ABI,
+      functionName: 'pendingYield',
+      args: userAddress ? [userAddress] : undefined,
+      query: { enabled: !!userAddress }
+    })
+
+    const { data: yieldInfo } = useReadContract({
+      address: mockUSDYAddress,
+      abi: MOCK_USDY_ABI,
+      functionName: 'getYieldInfo',
+      args: userAddress ? [userAddress] : undefined,
+      query: { enabled: !!userAddress }
+    })
+
     const { writeContractAsync: faucetAsync, isPending: isFauceting } = useWriteContract()
     const { writeContractAsync: claimYieldAsync, isPending: isClaiming } = useWriteContract()
     const { writeContractAsync: approveAsync, isPending: isApproving } = useWriteContract()
@@ -253,6 +287,12 @@ export function useCreditToken(userAddress?: Address) {
 
     return {
       balance: balance ? formatEther(balance) : '0',
+      pendingYield: pendingYieldData ? formatEther(pendingYieldData) : '0',
+      yieldInfo: yieldInfo ? {
+        balance: formatEther(yieldInfo[0]),
+        pendingYieldAmount: formatEther(yieldInfo[1]),
+        lastUpdate: Number(yieldInfo[2])
+      } : null,
       getTokensFromFaucet,
       claimTokenYield,
       approveToken,
@@ -267,6 +307,8 @@ export function useCreditToken(userAddress?: Address) {
     // Original USDY system - would need to implement real USDY contract calls
     return {
       balance: '0',
+      pendingYield: '0',
+      yieldInfo: null,
       getTokensFromFaucet: async () => { return '' },
       claimTokenYield: async () => { return '' },
       approveToken: async () => { return '' },
