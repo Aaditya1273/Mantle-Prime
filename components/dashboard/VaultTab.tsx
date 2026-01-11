@@ -49,21 +49,58 @@ export default function VaultTab() {
     if (!depositAmount || parseFloat(depositAmount) <= 0) return
     
     try {
-      const txHash = await stakeTokens(depositAmount)
-      setDepositAmount('')
+      // Show loading state
+      toast({
+        title: "🔄 Processing Stake",
+        description: `Staking ${depositAmount} ${tokenSymbol}. Please confirm in your wallet...`,
+        duration: 3000,
+      })
       
-      showTransactionSuccess(
-        txHash,
-        "Staking Successful",
-        `Successfully staked ${depositAmount} ${tokenSymbol}. You're now earning ${stakingAPY} staking rewards!`
-      )
-    } catch (error) {
+      const txHash = await stakeTokens(depositAmount)
+      
+      // Only show success if we get a valid transaction hash
+      if (txHash && txHash !== '0x' && txHash.length === 66) {
+        setDepositAmount('')
+        
+        // Create clickable explorer link
+        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
+        
+        toast({
+          title: "✅ Staking Successful",
+          description: `Successfully staked ${depositAmount} ${tokenSymbol}. You're now earning ${stakingAPY} staking rewards!`,
+          duration: 8000,
+        })
+
+        // Show explorer link in console
+        console.log(`✅ Staking Successful`)
+        console.log(`Transaction Hash: ${txHash}`)
+        console.log(`Explorer Link: ${explorerUrl}`)
+        console.log(`Click to view: ${explorerUrl}`)
+        
+      } else {
+        throw new Error('Invalid or empty transaction hash received')
+      }
+    } catch (error: any) {
       console.error('Deposit failed:', error)
-      showTransactionError(
-        "Staking Failed",
-        `Failed to stake ${tokenSymbol}. Please try again.`,
-        error
-      )
+      
+      let errorMessage = `Failed to stake ${tokenSymbol}. Please try again.`
+      
+      // Parse specific error messages
+      if (error?.message?.includes("insufficient funds")) {
+        errorMessage = "Insufficient MNT tokens for gas fees or staking amount."
+      } else if (error?.message?.includes("user rejected")) {
+        errorMessage = "Transaction was cancelled in your wallet."
+      } else if (error?.shortMessage) {
+        errorMessage = `Staking failed: ${error.shortMessage}`
+      }
+      
+      toast({
+        title: "❌ Staking Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 8000,
+      })
     }
   }
 
@@ -80,20 +117,56 @@ export default function VaultTab() {
 
   const handleClaimYield = async () => {
     try {
+      // Show loading state
+      toast({
+        title: "🔄 Processing Yield Claim",
+        description: "Claiming staking rewards. Please confirm in your wallet...",
+        duration: 3000,
+      })
+      
       const txHash = await claimStakingYield()
       
-      showTransactionSuccess(
-        txHash,
-        "Yield Claimed Successfully",
-        `Successfully claimed ${pendingYield} ${tokenSymbol} staking rewards. Keep staking to earn more!`
-      )
-    } catch (error) {
+      // Only show success if we get a valid transaction hash
+      if (txHash && txHash !== '0x' && txHash.length === 66) {
+        // Create clickable explorer link
+        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
+        
+        toast({
+          title: "✅ Yield Claimed Successfully",
+          description: `Successfully claimed ${pendingYield} ${tokenSymbol} staking rewards. Keep staking to earn more!`,
+          duration: 8000,
+        })
+
+        // Show explorer link in console
+        console.log(`✅ Yield Claim Successful`)
+        console.log(`Transaction Hash: ${txHash}`)
+        console.log(`Explorer Link: ${explorerUrl}`)
+        console.log(`Click to view: ${explorerUrl}`)
+        
+      } else {
+        throw new Error('Invalid or empty transaction hash received')
+      }
+    } catch (error: any) {
       console.error('Claim failed:', error)
-      showTransactionError(
-        "Yield Claim Failed",
-        "Failed to claim staking yield. Please try again.",
-        error
-      )
+      
+      let errorMessage = "Failed to claim staking yield. Please try again."
+      
+      // Parse specific error messages
+      if (error?.message?.includes("insufficient funds")) {
+        errorMessage = "Insufficient MNT tokens for gas fees."
+      } else if (error?.message?.includes("user rejected")) {
+        errorMessage = "Transaction was cancelled in your wallet."
+      } else if (error?.shortMessage) {
+        errorMessage = `Yield claim failed: ${error.shortMessage}`
+      }
+      
+      toast({
+        title: "❌ Yield Claim Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 8000,
+      })
     }
   }
 

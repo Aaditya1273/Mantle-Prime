@@ -88,21 +88,73 @@ export default function CreditTab() {
       console.log('Current USDY balance:', creditBalance)
       console.log('Credit symbol:', creditSymbol)
       
-      const txHash = await getTokensFromFaucet()
-      setCreditAmount('')
+      // Show loading state
+      toast({
+        title: "🔄 Processing Faucet Request",
+        description: "Getting USDY tokens from faucet. Please confirm in your wallet...",
+        duration: 3000,
+      })
       
-      showTransactionSuccess(
-        txHash,
-        "USDY Tokens Received",
-        `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`
-      )
+      const txHash = await getTokensFromFaucet()
+      
+      // Only show success if we get a valid transaction hash
+      if (txHash && txHash !== '0x' && txHash.length === 66) {
+        setCreditAmount('')
+        
+        // Create clickable explorer link
+        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
+        
+        toast({
+          title: "✅ USDY Tokens Received",
+          description: `Successfully received 5,000 ${creditSymbol} tokens from faucet. You can now invest in RWA assets!`,
+          duration: 8000,
+        })
+
+        // Show explorer link in console and separate notification
+        console.log(`✅ USDY Faucet Successful`)
+        console.log(`Transaction Hash: ${txHash}`)
+        console.log(`Explorer Link: ${explorerUrl}`)
+        console.log(`Click to view: ${explorerUrl}`)
+        
+        // Show a follow-up toast with explorer link
+        setTimeout(() => {
+          toast({
+            title: "🔗 Transaction Details",
+            description: `Hash: ${shortHash} - Check console for explorer link`,
+            duration: 10000,
+          })
+        }, 2000)
+        
+      } else {
+        throw new Error('Invalid or empty transaction hash received')
+      }
     } catch (error: any) {
       console.error('Faucet failed:', error)
-      showTransactionError(
-        "Faucet Transaction Failed",
-        "Failed to get USDY tokens from faucet.",
-        error
-      )
+      
+      let errorMessage = "Failed to get USDY tokens from faucet."
+      
+      // Parse specific error messages
+      if (error?.message?.includes("Already have enough USDY")) {
+        errorMessage = "You already have the maximum USDY balance (10,000 limit per wallet)"
+      } else if (error?.message?.includes("execution reverted")) {
+        errorMessage = "Transaction was rejected by the blockchain. You may have reached the faucet limit."
+      } else if (error?.message?.includes("insufficient funds")) {
+        errorMessage = "Insufficient MNT tokens for gas fees. Please add MNT to your wallet."
+      } else if (error?.message?.includes("user rejected")) {
+        errorMessage = "Transaction was cancelled in your wallet."
+      } else if (error?.message?.includes("network")) {
+        errorMessage = "Network connection issue. Please check your connection and try again."
+      } else if (error?.shortMessage) {
+        errorMessage = `Faucet failed: ${error.shortMessage}`
+      }
+      
+      toast({
+        title: "❌ Faucet Transaction Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 8000,
+      })
     }
   }
 
@@ -117,21 +169,71 @@ export default function CreditTab() {
     }
     
     try {
-      const txHash = await claimTokenYield()
-      setRepayAmount('')
+      // Show loading state
+      toast({
+        title: "🔄 Processing Yield Claim",
+        description: "Claiming USDY yield rewards. Please confirm in your wallet...",
+        duration: 3000,
+      })
       
-      showTransactionSuccess(
-        txHash,
-        "Yield Claimed Successfully",
-        `Successfully claimed ${creditSymbol} yield rewards. Your USDY balance has been updated!`
-      )
+      const txHash = await claimTokenYield()
+      
+      // Only show success if we get a valid transaction hash
+      if (txHash && txHash !== '0x' && txHash.length === 66) {
+        setRepayAmount('')
+        
+        // Create clickable explorer link
+        const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${txHash}`
+        const shortHash = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`
+        
+        toast({
+          title: "✅ Yield Claimed Successfully",
+          description: `Successfully claimed ${creditSymbol} yield rewards. Your USDY balance has been updated!`,
+          duration: 8000,
+        })
+
+        // Show explorer link in console
+        console.log(`✅ Yield Claim Successful`)
+        console.log(`Transaction Hash: ${txHash}`)
+        console.log(`Explorer Link: ${explorerUrl}`)
+        console.log(`Click to view: ${explorerUrl}`)
+        
+        // Show a follow-up toast with explorer link
+        setTimeout(() => {
+          toast({
+            title: "🔗 Transaction Details",
+            description: `Hash: ${shortHash} - Check console for explorer link`,
+            duration: 10000,
+          })
+        }, 2000)
+        
+      } else {
+        throw new Error('Invalid or empty transaction hash received')
+      }
     } catch (error: any) {
       console.error('Yield claim failed:', error)
-      showTransactionError(
-        "Yield Claim Failed",
-        "Failed to claim USDY yield rewards.",
-        error
-      )
+      
+      let errorMessage = "Failed to claim yield rewards."
+      
+      // Parse specific error messages
+      if (error?.message?.includes("execution reverted")) {
+        errorMessage = "Transaction was rejected by the blockchain. You may not have any yield to claim."
+      } else if (error?.message?.includes("insufficient funds")) {
+        errorMessage = "Insufficient MNT tokens for gas fees. Please add MNT to your wallet."
+      } else if (error?.message?.includes("user rejected")) {
+        errorMessage = "Transaction was cancelled in your wallet."
+      } else if (error?.message?.includes("network")) {
+        errorMessage = "Network connection issue. Please check your connection and try again."
+      } else if (error?.shortMessage) {
+        errorMessage = `Yield claim failed: ${error.shortMessage}`
+      }
+      
+      toast({
+        title: "❌ Yield Claim Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 8000,
+      })
     }
   }
 

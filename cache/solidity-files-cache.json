@@ -1256,6 +1256,48 @@
       "imports": [],
       "versionPragmas": [],
       "artifacts": []
+    },
+    "C:\\Users\\Aditya\\OneDrive\\Desktop\\New folder\\New folder\\Mantle-Prime\\contracts\\simplified\\SimplifiedRWAMarketplace.sol": {
+      "lastModificationDate": 1768102262186,
+      "contentHash": "96923ab53d08c6f6189deaf9808a825b",
+      "sourceName": "contracts/simplified/SimplifiedRWAMarketplace.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "SimplifiedRWAMarketplace"
+      ]
     }
   }
 }

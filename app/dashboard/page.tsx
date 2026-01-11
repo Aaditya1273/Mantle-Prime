@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { LogoWithText } from '@/components/ui/logo'
 import {
@@ -18,20 +17,14 @@ import {
   Building,
   TrendingUp,
   Settings,
-  LogOut,
-  ArrowUpRight,
-  ArrowDownRight,
-  DollarSign,
-  Percent,
-  Shield,
-  AlertCircle
+  LogOut
 } from 'lucide-react'
 
 // Import tab components
 import OverviewTab from '@/components/dashboard/OverviewTab'
 import VaultTab from '@/components/dashboard/VaultTab'
 import CreditTab from '@/components/dashboard/CreditTab'
-import MarketplaceTab from '@/components/dashboard/MarketplaceTab'
+import MarketplaceTab from '@/components/dashboard/MarketplaceTabV3'
 import PortfolioTab from '@/components/dashboard/PortfolioTab'
 
 export default function Dashboard() {
@@ -144,7 +137,7 @@ export default function Dashboard() {
           {/* Tab Content */}
           <div className="space-y-6">
             <TabsContent value="overview" className="space-y-6">
-              <OverviewTab />
+              <OverviewTab onTabChange={setActiveTab} />
             </TabsContent>
 
             <TabsContent value="vault" className="space-y-6">

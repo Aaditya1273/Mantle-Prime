@@ -1,4 +1,4 @@
-import { useReadContract, useWriteContract, useBalance } from 'wagmi'
+import { useReadContract, useWriteContract, useBalance, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, formatEther, Address } from 'viem'
 
 // Get demo mode from environment
@@ -96,20 +96,13 @@ const RWA_MARKETPLACE_ABI = [
   },
   {
     "inputs": [{"type": "uint256", "name": "assetId"}],
-    "name": "claimYield",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"type": "uint256", "name": "assetId"}],
     "name": "getAssetInfo",
     "outputs": [
       {"type": "string", "name": "name"},
       {"type": "uint256", "name": "totalShares"},
       {"type": "uint256", "name": "availableShares"},
       {"type": "uint256", "name": "pricePerShare"},
-      {"type": "uint256", "name": "apy"}
+      {"type": "uint256", "name": "expectedYield"}
     ],
     "stateMutability": "view",
     "type": "function"
@@ -117,6 +110,13 @@ const RWA_MARKETPLACE_ABI = [
   {
     "inputs": [{"type": "address", "name": "user"}, {"type": "uint256", "name": "assetId"}],
     "name": "getUserShares",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAssetCount",
     "outputs": [{"type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
@@ -151,24 +151,26 @@ export function useStaking(userAddress?: Address) {
       functionName: 'totalStaked',
     })
 
-    const { writeContract: stake, isPending: isStaking } = useWriteContract()
-    const { writeContract: claimYield, isPending: isClaiming } = useWriteContract()
+    const { writeContractAsync: stakeAsync, isPending: isStaking } = useWriteContract()
+    const { writeContractAsync: claimYieldAsync, isPending: isClaiming } = useWriteContract()
 
     const stakeTokens = async (amount: string) => {
-      stake({
+      const hash = await stakeAsync({
         address: stakingVaultAddress,
         abi: MANTLE_STAKING_VAULT_ABI,
         functionName: 'stake',
         value: parseEther(amount)
       })
+      return hash
     }
 
     const claimStakingYield = async () => {
-      claimYield({
+      const hash = await claimYieldAsync({
         address: stakingVaultAddress,
         abi: MANTLE_STAKING_VAULT_ABI,
         functionName: 'claimYield'
       })
+      return hash
     }
 
     return {
@@ -191,8 +193,8 @@ export function useStaking(userAddress?: Address) {
       stakedAmount: '0',
       pendingYield: '0',
       totalStaked: '0',
-      stakeTokens: async () => {},
-      claimStakingYield: async () => {},
+      stakeTokens: async () => { return '' },
+      claimStakingYield: async () => { return '' },
       isStaking: false,
       isClaiming: false,
       tokenSymbol: 'mETH',
@@ -217,33 +219,36 @@ export function useCreditToken(userAddress?: Address) {
       query: { enabled: !!userAddress }
     })
 
-    const { writeContract: faucet, isPending: isFauceting } = useWriteContract()
-    const { writeContract: claimYield, isPending: isClaiming } = useWriteContract()
-    const { writeContract: approve, isPending: isApproving } = useWriteContract()
+    const { writeContractAsync: faucetAsync, isPending: isFauceting } = useWriteContract()
+    const { writeContractAsync: claimYieldAsync, isPending: isClaiming } = useWriteContract()
+    const { writeContractAsync: approveAsync, isPending: isApproving } = useWriteContract()
 
     const getTokensFromFaucet = async () => {
-      faucet({
+      const hash = await faucetAsync({
         address: mockUSDYAddress,
         abi: MOCK_USDY_ABI,
         functionName: 'faucet'
       })
+      return hash
     }
 
     const claimTokenYield = async () => {
-      claimYield({
+      const hash = await claimYieldAsync({
         address: mockUSDYAddress,
         abi: MOCK_USDY_ABI,
         functionName: 'claimYield'
       })
+      return hash
     }
 
     const approveToken = async (spender: Address, amount: string) => {
-      approve({
+      const hash = await approveAsync({
         address: mockUSDYAddress,
         abi: MOCK_USDY_ABI,
         functionName: 'approve',
         args: [spender, parseEther(amount)]
       })
+      return hash
     }
 
     return {
@@ -262,9 +267,9 @@ export function useCreditToken(userAddress?: Address) {
     // Original USDY system - would need to implement real USDY contract calls
     return {
       balance: '0',
-      getTokensFromFaucet: async () => {},
-      claimTokenYield: async () => {},
-      approveToken: async () => {},
+      getTokensFromFaucet: async () => { return '' },
+      claimTokenYield: async () => { return '' },
+      approveToken: async () => { return '' },
       isFauceting: false,
       isClaiming: false,
       isApproving: false,
@@ -281,8 +286,7 @@ export function useRWAMarketplace(userAddress?: Address) {
     ? getValidAddress(process.env.NEXT_PUBLIC_SIMPLIFIED_RWA_MARKETPLACE_ADDRESS, '0x703C397732f6F13D11Ee71154B462969C5CF75f4')
     : getValidAddress(process.env.NEXT_PUBLIC_RWA_MARKETPLACE_ADDRESS, '0xcf4F105FeAc23F00489a7De060D34959f8796dd0')
 
-  const { writeContract: purchaseShares, isPending: isPurchasing } = useWriteContract()
-  const { writeContract: claimYield, isPending: isClaiming } = useWriteContract()
+  const { writeContractAsync: purchaseSharesAsync, isPending: isPurchasing } = useWriteContract()
 
   const getAssetInfo = (assetId: number) => {
     return useReadContract({
@@ -304,30 +308,24 @@ export function useRWAMarketplace(userAddress?: Address) {
   }
 
   const buyShares = async (assetId: number, shares: number) => {
-    purchaseShares({
+    // Validate inputs
+    if (!assetId && assetId !== 0) throw new Error('Invalid asset ID')
+    if (!shares || shares <= 0) throw new Error('Invalid number of shares')
+    
+    const hash = await purchaseSharesAsync({
       address: marketplaceAddress,
       abi: RWA_MARKETPLACE_ABI,
       functionName: 'purchaseShares',
       args: [BigInt(assetId), BigInt(shares)]
     })
-  }
-
-  const claimAssetYield = async (assetId: number) => {
-    claimYield({
-      address: marketplaceAddress,
-      abi: RWA_MARKETPLACE_ABI,
-      functionName: 'claimYield',
-      args: [BigInt(assetId)]
-    })
+    return hash
   }
 
   return {
     getAssetInfo,
     getUserShares,
     buyShares,
-    claimAssetYield,
-    isPurchasing,
-    isClaiming
+    isPurchasing
   }
 }
 
